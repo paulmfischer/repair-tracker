@@ -67,7 +67,7 @@ else if (_stats is not null)
             <MudItem xs="6" sm="4" md="2">
                 <MudPaper Class="pa-3 text-center" Elevation="1">
                     <MudChip T="string" Color="@StatusColor(kvp.Key)" Size="Size.Small">
-                        @kvp.Key
+                        @kvp.Key.ToDisplayString()
                     </MudChip>
                     <MudText Typo="Typo.h4">@kvp.Value</MudText>
                 </MudPaper>

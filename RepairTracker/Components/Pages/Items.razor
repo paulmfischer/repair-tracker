@@ -26,7 +26,7 @@
         <MudSelect T="RepairStatus?" @bind-Value="_statusFilter" Label="Status" Clearable="true">
             @foreach (var status in Enum.GetValues<RepairStatus>())
             {
-                <MudSelectItem T="RepairStatus?" Value="status">@status</MudSelectItem>
+                <MudSelectItem T="RepairStatus?" Value="status">@status.ToDisplayString()</MudSelectItem>
             }
         </MudSelect>
     </MudStack>
@@ -45,13 +45,13 @@ else
             <PropertyColumn Property="x => x.Name" Title="Item" />
             <TemplateColumn Title="Source">
                 <CellTemplate>
-                    <MudChip T="string" Size="Size.Small">@context.Item.Source</MudChip>
+                    <MudChip T="string" Size="Size.Small">@context.Item.Source.ToDisplayString()</MudChip>
                 </CellTemplate>
             </TemplateColumn>
             <TemplateColumn Title="Status">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small" Color="@StatusColor(context.Item.Status)">
-                        @context.Item.Status
+                        @context.Item.Status.ToDisplayString()
                     </MudChip>
                 </CellTemplate>
             </TemplateColumn>

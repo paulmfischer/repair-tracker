@@ -31,7 +31,7 @@ else if (_item is not null)
                     <MudStepper @bind-ActiveIndex="_statusIndex" Linear="false" Vertical="false">
                         @foreach (var status in Enum.GetValues<RepairStatus>())
                         {
-                            <MudStep Title="@status.ToString()" />
+                            <MudStep Title="@status.ToDisplayString()" />
                         }
                     </MudStepper>
                 </MudCardContent>
@@ -51,7 +51,7 @@ else if (_item is not null)
                     <MudSelect @bind-Value="_item.Source" Label="Source" Class="mb-3">
                         @foreach (var src in Enum.GetValues<ItemSource>())
                         {
-                            <MudSelectItem Value="src">@src</MudSelectItem>
+                            <MudSelectItem Value="src">@src.ToDisplayString()</MudSelectItem>
                         }
                     </MudSelect>
                     <MudTextField @bind-Value="_item.PurchaseListingId" Label="Purchase Listing ID" Class="mb-3" />

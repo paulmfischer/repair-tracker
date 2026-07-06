@@ -11,7 +11,7 @@ public class Item
 
     public string Name { get; set; } = string.Empty;
     public string? SerialNumber { get; set; }
-    public ItemSource Source { get; set; } = ItemSource.Other;
+    public ItemSource Source { get; set; } = ItemSource.eBay;
     public RepairStatus Status { get; set; } = RepairStatus.Intake;
 
     public string PurchaseListingId { get; set; } = string.Empty;
