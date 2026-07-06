@@ -18,7 +18,7 @@ public class Item
     public string SaleListingId { get; set; } = string.Empty;
 
     public string OriginalFault { get; set; } = string.Empty;
-    public string RepairNotes { get; set; } = string.Empty;
+    public List<RepairNote> Notes { get; set; } = new();
 
     public decimal Cost { get; set; }
     public decimal Parts { get; set; }

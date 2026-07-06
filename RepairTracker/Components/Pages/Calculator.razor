@@ -62,12 +62,6 @@ else
                         </tbody>
                     </MudSimpleTable>
                 </MudCardContent>
-                <MudCardActions>
-                    <MudButton Variant="Variant.Outlined" Color="Color.Primary"
-                               Href="@SaveAsItemHref">
-                        Save as New Item
-                    </MudButton>
-                </MudCardActions>
             </MudCard>
         </MudItem>
     </MudGrid>
@@ -95,6 +89,4 @@ else
         _totalCosts = _cost + _parts + _resellerFee;
         _grossProfit = _estimatedSellPrice - _totalCosts;
     }
-
-    private string SaveAsItemHref => $"/items/new?cost={_cost}&parts={_parts}&estimatedSellPrice={_estimatedSellPrice}";
 }

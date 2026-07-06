@@ -91,3 +91,5 @@ desktop.ini
 .env.*
 appsettings.Local.json
 secrets.json
+
+uploads/
