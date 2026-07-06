@@ -1,7 +1,6 @@
 @page "/calculator"
 @rendermode InteractiveServer
 @inject ISettingsService SettingsService
-@inject NavigationManager Nav
 
 <PageTitle>Calculator</PageTitle>
 
@@ -65,7 +64,7 @@ else
                 </MudCardContent>
                 <MudCardActions>
                     <MudButton Variant="Variant.Outlined" Color="Color.Primary"
-                               OnClick="SaveAsItem">
+                               Href="@SaveAsItemHref">
                         Save as New Item
                     </MudButton>
                 </MudCardActions>
@@ -97,9 +96,5 @@ else
         _grossProfit = _estimatedSellPrice - _totalCosts;
     }
 
-    private void SaveAsItem()
-    {
-        var query = $"?cost={_cost}&parts={_parts}&estimatedSellPrice={_estimatedSellPrice}";
-        Nav.NavigateTo($"/items/new{query}");
-    }
+    private string SaveAsItemHref => $"/items/new?cost={_cost}&parts={_parts}&estimatedSellPrice={_estimatedSellPrice}";
 }

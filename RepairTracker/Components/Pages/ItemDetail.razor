@@ -9,7 +9,7 @@
 <PageTitle>@(_isNew ? "New Item" : _item?.Name ?? "Item")</PageTitle>
 
 <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
-    <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" OnClick='() => Nav.NavigateTo("/items")' />
+    <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Href="/items" />
     <MudText Typo="Typo.h5">@(_isNew ? "New Item" : _item?.Name)</MudText>
 </MudStack>
 
@@ -145,7 +145,7 @@ else if (_item is not null)
             }
             @(_isNew ? "Create Item" : "Save Changes")
         </MudButton>
-        <MudButton Variant="Variant.Outlined" OnClick='() => Nav.NavigateTo("/items")'>
+        <MudButton Variant="Variant.Outlined" Href="/items">
             Cancel
         </MudButton>
     </MudStack>
