@@ -1,0 +1,105 @@
+@page "/calculator"
+@rendermode InteractiveServer
+@inject ISettingsService SettingsService
+@inject NavigationManager Nav
+
+<PageTitle>Calculator</PageTitle>
+
+<MudText Typo="Typo.h5" Class="mb-4">Pre-Purchase Calculator</MudText>
+
+@if (_settings is null)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudCard>
+                <MudCardContent>
+                    <MudNumericField @bind-Value="_cost" @bind-Value:after="Recalculate"
+                                     Label="Purchase Cost"
+                                     Adornment="Adornment.Start" AdornmentText="$"
+                                     Min="0m" Format="F2" Immediate="true" />
+                    <MudNumericField @bind-Value="_parts" @bind-Value:after="Recalculate"
+                                     Label="Parts Cost"
+                                     Adornment="Adornment.Start" AdornmentText="$"
+                                     Min="0m" Format="F2" Immediate="true" Class="mt-3" />
+                    <MudNumericField @bind-Value="_estimatedSellPrice" @bind-Value:after="Recalculate"
+                                     Label="Estimated Sell Price"
+                                     Adornment="Adornment.Start" AdornmentText="$"
+                                     Min="0m" Format="F2" Immediate="true" Class="mt-3" />
+                    <MudText Typo="Typo.caption" Class="mt-2 mud-text-secondary">
+                        Using reseller fee: @_settings.ResellerFeePercentage%
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudCard>
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Estimated Breakdown</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudSimpleTable Dense="true">
+                        <tbody>
+                            <tr>
+                                <td>Reseller Fee (@_settings.ResellerFeePercentage%)</td>
+                                <td class="text-right">$@_resellerFee.ToString("F2")</td>
+                            </tr>
+                            <tr>
+                                <td>Total Costs</td>
+                                <td class="text-right">$@_totalCosts.ToString("F2")</td>
+                            </tr>
+                            <tr style="font-weight:bold">
+                                <td>Gross Profit</td>
+                                <td class="text-right" style="color:@(_grossProfit >= 0 ? "green" : "red")">
+                                    $@_grossProfit.ToString("F2")
+                                </td>
+                            </tr>
+                        </tbody>
+                    </MudSimpleTable>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                               OnClick="SaveAsItem">
+                        Save as New Item
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private AppSettings? _settings;
+    private decimal _cost;
+    private decimal _parts;
+    private decimal _estimatedSellPrice;
+    private decimal _resellerFee;
+    private decimal _totalCosts;
+    private decimal _grossProfit;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _settings = await SettingsService.GetAsync();
+        Recalculate();
+    }
+
+    private void Recalculate()
+    {
+        if (_settings is null) return;
+        _resellerFee = Math.Round(_estimatedSellPrice * (_settings.ResellerFeePercentage / 100m), 2);
+        _totalCosts = _cost + _parts + _resellerFee;
+        _grossProfit = _estimatedSellPrice - _totalCosts;
+    }
+
+    private void SaveAsItem()
+    {
+        var query = $"?cost={_cost}&parts={_parts}&estimatedSellPrice={_estimatedSellPrice}";
+        Nav.NavigateTo($"/items/new{query}");
+    }
+}

@@ -1,0 +1,103 @@
+@page "/"
+@rendermode InteractiveServer
+@inject IItemService ItemService
+@inject ISettingsService SettingsService
+
+<PageTitle>Dashboard</PageTitle>
+
+<MudText Typo="Typo.h5" Class="mb-4">Dashboard</MudText>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (_stats is not null)
+{
+    <MudGrid Class="mb-6">
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard>
+                <MudCardContent>
+                    <MudText Typo="Typo.overline">Est. Total Profit</MudText>
+                    <MudText Typo="Typo.h5" Style="@ProfitColor(_stats.TotalEstimatedProfit)">
+                        $@_stats.TotalEstimatedProfit.ToString("F2")
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard>
+                <MudCardContent>
+                    <MudText Typo="Typo.overline">Actual Total Profit</MudText>
+                    <MudText Typo="Typo.h5" Style="@ProfitColor(_stats.TotalActualProfit)">
+                        $@_stats.TotalActualProfit.ToString("F2")
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard>
+                <MudCardContent>
+                    <MudText Typo="Typo.overline">Total Postage</MudText>
+                    <MudText Typo="Typo.h5">$@_stats.TotalPostage.ToString("F2")</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard>
+                <MudCardContent>
+                    <MudText Typo="Typo.overline">Total Hours Worked</MudText>
+                    <MudText Typo="Typo.h5">@_stats.TotalHoursWorked.ToString("F1") hrs</MudText>
+                    @if (_stats.TotalHoursWorked > 0)
+                    {
+                        <MudText Typo="Typo.caption">
+                            $@(_stats.TotalHoursWorked > 0
+                                ? (_stats.TotalActualProfit / _stats.TotalHoursWorked).ToString("F2")
+                                : "—")/hr
+                        </MudText>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    <MudText Typo="Typo.h6" Class="mb-3">Items by Status</MudText>
+    <MudGrid>
+        @foreach (var kvp in _stats.StatusCounts)
+        {
+            <MudItem xs="6" sm="4" md="2">
+                <MudPaper Class="pa-3 text-center" Elevation="1">
+                    <MudChip T="string" Color="@StatusColor(kvp.Key)" Size="Size.Small">
+                        @kvp.Key
+                    </MudChip>
+                    <MudText Typo="Typo.h4">@kvp.Value</MudText>
+                </MudPaper>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+@code {
+    private DashboardStats? _stats;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var settings = await SettingsService.GetAsync();
+        _stats = await ItemService.GetDashboardStatsAsync(settings.ResellerFeePercentage);
+        _loading = false;
+    }
+
+    private static string ProfitColor(decimal value) =>
+        value >= 0 ? "color:green" : "color:red";
+
+    private static Color StatusColor(RepairStatus status) => status switch
+    {
+        RepairStatus.Intake => Color.Default,
+        RepairStatus.Diagnosis => Color.Warning,
+        RepairStatus.PartsOrdered => Color.Info,
+        RepairStatus.Repaired => Color.Success,
+        RepairStatus.Listed => Color.Primary,
+        RepairStatus.Sold => Color.Dark,
+        _ => Color.Default
+    };
+}

@@ -140,16 +140,16 @@ RepairTracker/
 
 ## Implementation Steps
 
-- [ ] 1. `dotnet new blazorweb -n RepairTracker --interactivity Server` — scaffold project
-- [ ] 2. Add NuGet packages: `MongoDB.Driver`, `MudBlazor`
-- [ ] 3. Configure MudBlazor in `Program.cs` and `App.razor`
-- [ ] 4. Create `MongoDbContext`, register in DI with connection string from `appsettings.json`
-- [ ] 5. Implement `Models/` (Item, AppSettings, RepairStatus enum, ItemSource enum)
-- [ ] 6. Implement `IItemService` / `ItemService` with CRUD + aggregation queries
-- [ ] 7. Implement `ISettingsService` / `SettingsService` (upsert single settings doc)
-- [ ] 8. Build `MainLayout` with MudBlazor nav drawer
-- [ ] 9. Build pages in order: Settings → Calculator → Items → ItemDetail → Dashboard
-- [ ] 10. Wire up computed profit fields as C# properties on the model or in service layer
+- [x] 1. `dotnet new blazor -n RepairTracker --interactivity Server` — scaffold project
+- [x] 2. Add NuGet packages: `MongoDB.Driver 3.4.0`, `MudBlazor 8.8.0`
+- [x] 3. Configure MudBlazor in `Program.cs` and `App.razor`
+- [x] 4. Create `MongoDbContext`, register in DI with connection string from `appsettings.json`
+- [x] 5. Implement `Models/` (Item, AppSettings, RepairStatus enum, ItemSource enum)
+- [x] 6. Implement `IItemService` / `ItemService` with CRUD + aggregation queries
+- [x] 7. Implement `ISettingsService` / `SettingsService` (upsert single settings doc)
+- [x] 8. Build `MainLayout` with MudBlazor nav drawer
+- [x] 9. Build pages: Settings, Calculator, Items, ItemDetail, Dashboard (Home.razor)
+- [x] 10. Computed profit fields as methods on Item model (BsonIgnore not needed for methods)
 
 ---
 

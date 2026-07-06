@@ -1,0 +1,215 @@
+@page "/items/new"
+@page "/items/{Id}"
+@rendermode InteractiveServer
+@inject IItemService ItemService
+@inject ISettingsService SettingsService
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_isNew ? "New Item" : _item?.Name ?? "Item")</PageTitle>
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" OnClick='() => Nav.NavigateTo("/items")' />
+    <MudText Typo="Typo.h5">@(_isNew ? "New Item" : _item?.Name)</MudText>
+</MudStack>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (_item is not null)
+{
+    <MudGrid>
+        <MudItem xs="12">
+            <MudCard>
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Repair Status</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudStepper @bind-ActiveIndex="_statusIndex" Linear="false" Vertical="false">
+                        @foreach (var status in Enum.GetValues<RepairStatus>())
+                        {
+                            <MudStep Title="@status.ToString()" />
+                        }
+                    </MudStepper>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudCard>
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Item Information</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTextField @bind-Value="_item.Name" Label="Item Name" Required="true" Class="mb-3" />
+                    <MudTextField @bind-Value="_item.SerialNumber" Label="Serial Number (optional)" Class="mb-3" />
+                    <MudSelect @bind-Value="_item.Source" Label="Source" Class="mb-3">
+                        @foreach (var src in Enum.GetValues<ItemSource>())
+                        {
+                            <MudSelectItem Value="src">@src</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudTextField @bind-Value="_item.PurchaseListingId" Label="Purchase Listing ID" Class="mb-3" />
+                    <MudTextField @bind-Value="_item.SaleListingId" Label="Sale Listing ID" Class="mb-3" />
+                    <MudTextField @bind-Value="_item.OriginalFault" Label="Original Fault"
+                                  Lines="3" Class="mb-3" />
+                    <MudTextField @bind-Value="_item.RepairNotes" Label="Repair Notes / How Fixed"
+                                  Lines="4" />
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudCard>
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Financials</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudNumericField @bind-Value="_item.Cost" Label="Purchase Cost"
+                                     Adornment="Adornment.Start" AdornmentText="$"
+                                     Min="0m" Format="F2" Class="mb-3" />
+                    <MudNumericField @bind-Value="_item.Parts" Label="Parts Cost"
+                                     Adornment="Adornment.Start" AdornmentText="$"
+                                     Min="0m" Format="F2" Class="mb-3" />
+                    <MudNumericField @bind-Value="_item.EstimatedSellPrice" Label="Estimated Sell Price"
+                                     Adornment="Adornment.Start" AdornmentText="$"
+                                     Min="0m" Format="F2" Class="mb-3" />
+
+                    <MudDivider Class="my-3" />
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">Estimated (using @_feePercent% fee)</MudText>
+                    <MudSimpleTable Dense="true" Class="mb-4">
+                        <tbody>
+                            <tr>
+                                <td>Reseller Fee</td>
+                                <td>$@_item.ResellerFee(_feePercent).ToString("F2")</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Est. Profit</strong></td>
+                                <td style="color:@(_item.EstimatedProfit(_feePercent) >= 0 ? "green" : "red")">
+                                    <strong>$@_item.EstimatedProfit(_feePercent).ToString("F2")</strong>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </MudSimpleTable>
+
+                    <MudDivider Class="my-3" />
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">Actual</MudText>
+                    <MudNumericField @bind-Value="_item.ActualSellPrice"
+                                     Label="Actual Sell Price (after fees)"
+                                     Adornment="Adornment.Start" AdornmentText="$"
+                                     Min="0m" Format="F2" Class="mb-3" />
+                    <MudNumericField @bind-Value="_item.Postage" Label="Postage"
+                                     Adornment="Adornment.Start" AdornmentText="$"
+                                     Min="0m" Format="F2" Class="mb-3" />
+                    <MudNumericField @bind-Value="_item.HoursWorked" Label="Hours Worked"
+                                     Min="0m" Format="F1" Class="mb-3" />
+
+                    @if (_item.ActualSellPrice > 0)
+                    {
+                        <MudSimpleTable Dense="true">
+                            <tbody>
+                                <tr>
+                                    <td><strong>Net Profit</strong></td>
+                                    <td style="color:@(_item.NetProfit >= 0 ? "green" : "red")">
+                                        <strong>$@_item.NetProfit.ToString("F2")</strong>
+                                    </td>
+                                </tr>
+                                @if (_item.HourlyProfit.HasValue)
+                                {
+                                    <tr>
+                                        <td>Hourly Rate</td>
+                                        <td>$@_item.HourlyProfit!.Value.ToString("F2")/hr</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    <MudStack Row="true" Class="mt-4" Spacing="2">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   OnClick="Save" Disabled="_saving">
+            @if (_saving)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            @(_isNew ? "Create Item" : "Save Changes")
+        </MudButton>
+        <MudButton Variant="Variant.Outlined" OnClick='() => Nav.NavigateTo("/items")'>
+            Cancel
+        </MudButton>
+    </MudStack>
+}
+
+@code {
+    [Parameter] public string? Id { get; set; }
+    [SupplyParameterFromQuery] public decimal Cost { get; set; }
+    [SupplyParameterFromQuery] public decimal Parts { get; set; }
+    [SupplyParameterFromQuery] public decimal EstimatedSellPrice { get; set; }
+
+    private Item? _item;
+    private bool _loading = true;
+    private bool _saving;
+    private bool _isNew;
+    private decimal _feePercent;
+
+    private int _statusIndex
+    {
+        get => (int)(_item?.Status ?? RepairStatus.Intake);
+        set { if (_item is not null) _item.Status = (RepairStatus)value; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var settings = await SettingsService.GetAsync();
+        _feePercent = settings.ResellerFeePercentage;
+
+        if (string.IsNullOrEmpty(Id))
+        {
+            _isNew = true;
+            _item = new Item
+            {
+                Cost = Cost,
+                Parts = Parts,
+                EstimatedSellPrice = EstimatedSellPrice
+            };
+        }
+        else
+        {
+            _item = await ItemService.GetByIdAsync(Id);
+        }
+
+        _loading = false;
+    }
+
+    private async Task Save()
+    {
+        if (_item is null) return;
+        _saving = true;
+
+        if (_isNew)
+        {
+            await ItemService.CreateAsync(_item);
+            Snackbar.Add("Item created", Severity.Success);
+            Nav.NavigateTo($"/items/{_item.Id}");
+            _isNew = false;
+        }
+        else
+        {
+            await ItemService.UpdateAsync(_item);
+            Snackbar.Add("Saved", Severity.Success);
+        }
+
+        _saving = false;
+    }
+}
