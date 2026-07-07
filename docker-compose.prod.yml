@@ -1,0 +1,26 @@
+services:
+  app:
+    image: ghcr.io/paulmfischer/repair-tracker:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__MongoDB=mongodb://mongo:27017
+      - MongoDB__Database=RepairTracker
+    volumes:
+      - uploads:/app/wwwroot/uploads
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:7.0
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=RepairTracker
+
+volumes:
+  mongo_data:
+  uploads:

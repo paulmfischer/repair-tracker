@@ -14,8 +14,7 @@ builder.Services.AddMudServices();
 var mongoConnectionString = builder.Configuration.GetConnectionString("MongoDB") ?? "mongodb://localhost:27017";
 var databaseName = builder.Configuration["MongoDB:Database"] ?? "RepairTracker";
 builder.Services.AddSingleton<IMongoClient>(_ => new MongoClient(mongoConnectionString));
-builder.Services.AddSingleton<MongoDbContext>(sp =>
-    new MongoDbContext(sp.GetRequiredService<IMongoClient>(), databaseName));
+builder.Services.AddSingleton<MongoDbContext>(sp => new MongoDbContext(sp.GetRequiredService<IMongoClient>(), databaseName));
 builder.Services.AddScoped<IItemService, ItemService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 
