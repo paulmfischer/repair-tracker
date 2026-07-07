@@ -8,8 +8,9 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__MongoDB=mongodb://mongo:27017
       - MongoDB__Database=RepairTracker
+      - Uploads__Path=/data/uploads
     volumes:
-      - uploads:/app/wwwroot/uploads
+      - uploads:/data/uploads
     depends_on:
       - mongo
 

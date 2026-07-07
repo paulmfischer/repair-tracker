@@ -6,6 +6,7 @@
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
 @inject IWebHostEnvironment Env
+@inject IConfiguration Config
 
 <PageTitle>@(_isNew ? "New Item" : _item?.Name ?? "Item")</PageTitle>
 
@@ -291,7 +292,8 @@ else if (_item is not null)
 
         if (_newNoteFiles?.Count > 0)
         {
-            var uploadDir = Path.Combine(Env.WebRootPath, "uploads", _item.Id, note.Id);
+            var uploadsRoot = Config["Uploads:Path"] is { Length: > 0 } p ? p : Path.Combine(Env.WebRootPath, "uploads");
+            var uploadDir = Path.Combine(uploadsRoot, _item.Id, note.Id);
             Directory.CreateDirectory(uploadDir);
 
             foreach (var file in _newNoteFiles)

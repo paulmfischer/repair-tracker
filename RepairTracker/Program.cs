@@ -1,3 +1,4 @@
+using Microsoft.Extensions.FileProviders;
 using MongoDB.Driver;
 using MudBlazor.Services;
 using RepairTracker.Components;
@@ -27,6 +28,17 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseAntiforgery();
+
+var externalUploadsPath = app.Configuration["Uploads:Path"];
+if (!string.IsNullOrWhiteSpace(externalUploadsPath))
+{
+    Directory.CreateDirectory(externalUploadsPath);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(externalUploadsPath),
+        RequestPath = "/uploads"
+    });
+}
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
