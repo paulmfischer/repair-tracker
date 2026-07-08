@@ -9,8 +9,10 @@ services:
       - ConnectionStrings__MongoDB=mongodb://mongo:27017
       - MongoDB__Database=RepairTracker
       - Uploads__Path=/data/uploads
+      - DataProtection__Path=/data/keys
     volumes:
       - uploads:/data/uploads
+      - keys:/data/keys
     depends_on:
       - mongo
 
@@ -25,3 +27,4 @@ services:
 volumes:
   mongo_data:
   uploads:
+  keys:

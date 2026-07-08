@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.FileProviders;
 using MongoDB.Driver;
 using MudBlazor.Services;
@@ -18,6 +19,15 @@ builder.Services.AddSingleton<IMongoClient>(_ => new MongoClient(mongoConnection
 builder.Services.AddSingleton<MongoDbContext>(sp => new MongoDbContext(sp.GetRequiredService<IMongoClient>(), databaseName));
 builder.Services.AddScoped<IItemService, ItemService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
+
+var dataProtectionPath = builder.Configuration["DataProtection:Path"];
+if (!string.IsNullOrWhiteSpace(dataProtectionPath))
+{
+    Directory.CreateDirectory(dataProtectionPath);
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionPath))
+        .SetApplicationName("RepairTracker");
+}
 
 var app = builder.Build();
 
