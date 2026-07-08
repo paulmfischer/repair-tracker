@@ -20,7 +20,7 @@
 
 <MudPaper Class="mb-4 pa-3" Elevation="0" Outlined="true">
     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
-        <MudTextField @bind-Value="_search" Placeholder="Search by name..." Clearable="true"
+        <MudTextField @bind-Value="_search" Label="Search" Placeholder="Search by name..." Clearable="true"
                       Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
                       Immediate="true" />
         <MudSelect T="RepairStatus?" @bind-Value="_statusFilter" Label="Status" Clearable="true">
