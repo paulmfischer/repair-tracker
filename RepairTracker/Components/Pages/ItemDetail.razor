@@ -23,200 +23,193 @@ else if (_item is not null)
 {
     <MudGrid>
         <MudItem xs="12">
-            <MudCard>
-                <MudCardHeader>
-                    <CardHeaderContent>
-                        <MudText Typo="Typo.h6">Repair Status</MudText>
-                    </CardHeaderContent>
-                </MudCardHeader>
-                <MudCardContent>
-                    <MudStepper @bind-ActiveIndex="_statusIndex" Linear="false" Vertical="false">
-                        @foreach (var status in Enum.GetValues<RepairStatus>())
-                        {
-                            <MudStep Title="@status.ToDisplayString()" />
-                        }
-                    </MudStepper>
-                </MudCardContent>
-            </MudCard>
+            <MudStepper @bind-ActiveIndex="_statusIndex" NonLinear="true" Class="compact-stepper mb-2">
+                @foreach (var status in Enum.GetValues<RepairStatus>())
+                {
+                    <MudStep Title="@status.ToDisplayString()" Completed="@(status < _item.Status)" />
+                }
+            </MudStepper>
         </MudItem>
 
-        <MudItem xs="12" md="6">
-            <MudCard>
-                <MudCardHeader>
-                    <CardHeaderContent>
-                        <MudText Typo="Typo.h6">Item Information</MudText>
-                    </CardHeaderContent>
-                </MudCardHeader>
-                <MudCardContent>
-                    <MudTextField @bind-Value="_item.Name" Label="Item Name" Required="true" Class="mb-3" />
-                    <MudTextField @bind-Value="_item.SerialNumber" Label="Serial Number (optional)" Class="mb-3" />
-                    <MudSelect @bind-Value="_item.Source" Label="Source" Class="mb-3">
-                        @foreach (var src in Enum.GetValues<ItemSource>())
-                        {
-                            <MudSelectItem Value="src">@src.ToDisplayString()</MudSelectItem>
-                        }
-                    </MudSelect>
-                    <MudTextField @bind-Value="_item.PurchaseListingId" Label="Purchase Listing ID" Class="mb-3" />
-                    <MudTextField @bind-Value="_item.SaleListingId" Label="Sale Listing ID" Class="mb-3" />
-                    <MudTextField @bind-Value="_item.OriginalFault" Label="Original Fault"
-                                  Lines="3" />
-                </MudCardContent>
-            </MudCard>
-        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudStack Spacing="4">
+                <MudCard>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Item Information</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudTextField @bind-Value="_item.Name" Label="Item Name" Required="true" Class="mb-3" />
+                        <MudTextField @bind-Value="_item.SerialNumber" Label="Serial Number (optional)" Class="mb-3" />
+                        <MudSelect @bind-Value="_item.Source" Label="Source" Class="mb-3">
+                            @foreach (var src in Enum.GetValues<ItemSource>())
+                            {
+                                <MudSelectItem Value="src">@src.ToDisplayString()</MudSelectItem>
+                            }
+                        </MudSelect>
+                        <MudTextField @bind-Value="_item.PurchaseListingId" Label="Purchase Listing ID" Class="mb-3" />
+                        <MudTextField @bind-Value="_item.SaleListingId" Label="Sale Listing ID" Class="mb-3" />
+                        <MudTextField @bind-Value="_item.OriginalFault" Label="Original Fault"
+                                      Lines="3" />
+                    </MudCardContent>
+                </MudCard>
 
-        <MudItem xs="12" md="6">
-            <MudCard>
-                <MudCardHeader>
-                    <CardHeaderContent>
-                        <MudText Typo="Typo.h6">Financials</MudText>
-                    </CardHeaderContent>
-                </MudCardHeader>
-                <MudCardContent>
-                    <MudNumericField @bind-Value="_item.Cost" Label="Purchase Cost"
-                                     Adornment="Adornment.Start" AdornmentText="$"
-                                     Min="0m" Format="F2" Class="mb-3" />
-                    <MudNumericField @bind-Value="_item.Parts" Label="Parts Cost"
-                                     Adornment="Adornment.Start" AdornmentText="$"
-                                     Min="0m" Format="F2" Class="mb-3" />
-                    <MudNumericField @bind-Value="_item.EstimatedSellPrice" Label="Estimated Sell Price"
-                                     Adornment="Adornment.Start" AdornmentText="$"
-                                     Min="0m" Format="F2" Class="mb-3" />
+                <MudCard>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">Financials</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudNumericField @bind-Value="_item.Cost" Label="Purchase Cost"
+                                         Adornment="Adornment.Start" AdornmentText="$"
+                                         Min="0m" Format="F2" Class="mb-3" />
+                        <MudNumericField @bind-Value="_item.Parts" Label="Parts Cost"
+                                         Adornment="Adornment.Start" AdornmentText="$"
+                                         Min="0m" Format="F2" Class="mb-3" />
+                        <MudNumericField @bind-Value="_item.EstimatedSellPrice" Label="Estimated Sell Price"
+                                         Adornment="Adornment.Start" AdornmentText="$"
+                                         Min="0m" Format="F2" Class="mb-3" />
 
-                    <MudDivider Class="my-3" />
-                    <MudText Typo="Typo.subtitle2" Class="mb-2">Estimated (using @_feePercent% fee)</MudText>
-                    <MudSimpleTable Dense="true" Class="mb-4">
-                        <tbody>
-                            <tr>
-                                <td>Reseller Fee</td>
-                                <td>$@_item.ResellerFee(_feePercent).ToString("F2")</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Est. Profit</strong></td>
-                                <td style="color:@(_item.EstimatedProfit(_feePercent) >= 0 ? "green" : "red")">
-                                    <strong>$@_item.EstimatedProfit(_feePercent).ToString("F2")</strong>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </MudSimpleTable>
-
-                    <MudDivider Class="my-3" />
-                    <MudText Typo="Typo.subtitle2" Class="mb-2">Actual</MudText>
-                    <MudNumericField @bind-Value="_item.ActualSellPrice"
-                                     Label="Actual Sell Price (after fees)"
-                                     Adornment="Adornment.Start" AdornmentText="$"
-                                     Min="0m" Format="F2" Class="mb-3" />
-                    <MudNumericField @bind-Value="_item.Postage" Label="Postage"
-                                     Adornment="Adornment.Start" AdornmentText="$"
-                                     Min="0m" Format="F2" Class="mb-3" />
-                    <MudNumericField @bind-Value="_item.HoursWorked" Label="Hours Worked"
-                                     Min="0m" Format="F1" Class="mb-3" />
-
-                    @if (_item.ActualSellPrice > 0)
-                    {
-                        <MudSimpleTable Dense="true">
+                        <MudDivider Class="my-3" />
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">Estimated (using @_feePercent% fee)</MudText>
+                        <MudSimpleTable Dense="true" Class="mb-4">
                             <tbody>
                                 <tr>
-                                    <td><strong>Net Profit</strong></td>
-                                    <td style="color:@(_item.NetProfit >= 0 ? "green" : "red")">
-                                        <strong>$@_item.NetProfit.ToString("F2")</strong>
+                                    <td>Reseller Fee</td>
+                                    <td>$@_item.ResellerFee(_feePercent).ToString("F2")</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Est. Profit</strong></td>
+                                    <td style="color:@(_item.EstimatedProfit(_feePercent) >= 0 ? "green" : "red")">
+                                        <strong>$@_item.EstimatedProfit(_feePercent).ToString("F2")</strong>
                                     </td>
                                 </tr>
-                                @if (_item.HourlyProfit.HasValue)
-                                {
-                                    <tr>
-                                        <td>Hourly Rate</td>
-                                        <td>$@_item.HourlyProfit!.Value.ToString("F2")/hr</td>
-                                    </tr>
-                                }
                             </tbody>
                         </MudSimpleTable>
+
+                        <MudDivider Class="my-3" />
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">Actual</MudText>
+                        <MudNumericField @bind-Value="_item.ActualSellPrice"
+                                         Label="Actual Sell Price (after fees)"
+                                         Adornment="Adornment.Start" AdornmentText="$"
+                                         Min="0m" Format="F2" Class="mb-3" />
+                        <MudNumericField @bind-Value="_item.Postage" Label="Postage"
+                                         Adornment="Adornment.Start" AdornmentText="$"
+                                         Min="0m" Format="F2" Class="mb-3" />
+                        <MudNumericField @bind-Value="_item.HoursWorked" Label="Hours Worked"
+                                         Min="0m" Format="F1" Class="mb-3" />
+
+                        @if (_item.ActualSellPrice > 0)
+                        {
+                            <MudSimpleTable Dense="true">
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Net Profit</strong></td>
+                                        <td style="color:@(_item.NetProfit >= 0 ? "green" : "red")">
+                                            <strong>$@_item.NetProfit.ToString("F2")</strong>
+                                        </td>
+                                    </tr>
+                                    @if (_item.HourlyProfit.HasValue)
+                                    {
+                                        <tr>
+                                            <td>Hourly Rate</td>
+                                            <td>$@_item.HourlyProfit!.Value.ToString("F2")/hr</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </MudSimpleTable>
+                        }
+                    </MudCardContent>
+                </MudCard>
+            </MudStack>
+        </MudItem>
+
+        <MudItem xs="12" md="8">
+            <MudCard>
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Repair Log</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    @if (_isNew)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Save the item first to add notes.</MudText>
+                    }
+                    else
+                    {
+                        <MudTextField @bind-Value="_newNoteText" Label="Note" Lines="3" Class="mb-2" />
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-1">
+                            <MudFileUpload T="IReadOnlyList<IBrowserFile>"
+                                           FilesChanged="@(files => _newNoteFiles = files)"
+                                           Accept=".jpg,.jpeg,.png,.gif,.webp">
+                                <ActivatorContent>
+                                    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.AttachFile">
+                                        Attach Pictures
+                                    </MudButton>
+                                </ActivatorContent>
+                            </MudFileUpload>
+                            @if (_newNoteFiles?.Count > 0)
+                            {
+                                <MudText Typo="Typo.caption">@_newNoteFiles.Count picture(s) selected</MudText>
+                            }
+                        </MudStack>
+                        <MudButton Variant="Variant.Filled" Color="Color.Secondary"
+                                   OnClick="AddNote" Disabled="@(_addingNote || string.IsNullOrWhiteSpace(_newNoteText))">
+                            @if (_addingNote)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                            }
+                            Add Note
+                        </MudButton>
+
+                        @if (_item.Notes.Any())
+                        {
+                            <MudDivider Class="my-4" />
+                            <MudTimeline TimelinePosition="TimelinePosition.Start">
+                                @foreach (var note in _item.Notes.OrderByDescending(n => n.CreatedAt))
+                                {
+                                    <MudTimelineItem Color="Color.Primary" Size="Size.Small">
+                                        <ItemContent>
+                                            <MudStack Spacing="1" Class="pb-4">
+                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">
+                                                        @note.StatusAtTime.ToDisplayString()
+                                                    </MudChip>
+                                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                        @note.CreatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
+                                                    </MudText>
+                                                </MudStack>
+                                                <MudText>@note.Text</MudText>
+                                                @if (note.ImagePaths.Any())
+                                                {
+                                                    <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mt-1">
+                                                        @foreach (var path in note.ImagePaths)
+                                                        {
+                                                            <a href="/@path" target="_blank">
+                                                                <img src="/@path" alt="Note image"
+                                                                     style="height:80px;width:80px;object-fit:cover;border-radius:4px;cursor:pointer;" />
+                                                            </a>
+                                                        }
+                                                    </MudStack>
+                                                }
+                                            </MudStack>
+                                        </ItemContent>
+                                    </MudTimelineItem>
+                                }
+                            </MudTimeline>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-3">No notes yet.</MudText>
+                        }
                     }
                 </MudCardContent>
             </MudCard>
         </MudItem>
     </MudGrid>
-
-    <MudCard Class="mt-4">
-        <MudCardHeader>
-            <CardHeaderContent>
-                <MudText Typo="Typo.h6">Repair Log</MudText>
-            </CardHeaderContent>
-        </MudCardHeader>
-        <MudCardContent>
-            @if (_isNew)
-            {
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Save the item first to add notes.</MudText>
-            }
-            else
-            {
-                <MudTextField @bind-Value="_newNoteText" Label="Note" Lines="3" Class="mb-2" />
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-1">
-                    <MudFileUpload T="IReadOnlyList<IBrowserFile>"
-                                   FilesChanged="@(files => _newNoteFiles = files)"
-                                   Accept=".jpg,.jpeg,.png,.gif,.webp">
-                        <ActivatorContent>
-                            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.AttachFile">
-                                Attach Pictures
-                            </MudButton>
-                        </ActivatorContent>
-                    </MudFileUpload>
-                    @if (_newNoteFiles?.Count > 0)
-                    {
-                        <MudText Typo="Typo.caption">@_newNoteFiles.Count picture(s) selected</MudText>
-                    }
-                </MudStack>
-                <MudButton Variant="Variant.Filled" Color="Color.Secondary"
-                           OnClick="AddNote" Disabled="@(_addingNote || string.IsNullOrWhiteSpace(_newNoteText))">
-                    @if (_addingNote)
-                    {
-                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                    }
-                    Add Note
-                </MudButton>
-
-                @if (_item.Notes.Any())
-                {
-                    <MudDivider Class="my-4" />
-                    <MudTimeline TimelinePosition="TimelinePosition.Start">
-                        @foreach (var note in _item.Notes.OrderByDescending(n => n.CreatedAt))
-                        {
-                            <MudTimelineItem Color="Color.Primary" Size="Size.Small">
-                                <ItemContent>
-                                    <MudStack Spacing="1" Class="pb-4">
-                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">
-                                                @note.StatusAtTime.ToDisplayString()
-                                            </MudChip>
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                                @note.CreatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
-                                            </MudText>
-                                        </MudStack>
-                                        <MudText>@note.Text</MudText>
-                                        @if (note.ImagePaths.Any())
-                                        {
-                                            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mt-1">
-                                                @foreach (var path in note.ImagePaths)
-                                                {
-                                                    <a href="/@path" target="_blank">
-                                                        <img src="/@path" alt="Note image"
-                                                             style="height:80px;width:80px;object-fit:cover;border-radius:4px;cursor:pointer;" />
-                                                    </a>
-                                                }
-                                            </MudStack>
-                                        }
-                                    </MudStack>
-                                </ItemContent>
-                            </MudTimelineItem>
-                        }
-                    </MudTimeline>
-                }
-                else
-                {
-                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-3">No notes yet.</MudText>
-                }
-            }
-        </MudCardContent>
-    </MudCard>
 
     <MudStack Row="true" Class="mt-4" Spacing="2">
         <MudButton Variant="Variant.Filled" Color="Color.Primary"
@@ -245,15 +238,15 @@ else if (_item is not null)
     private bool _isNew;
     private decimal _feePercent;
 
-    private string _newNoteText = string.Empty;
-    private IReadOnlyList<IBrowserFile>? _newNoteFiles;
-    private bool _addingNote;
-
     private int _statusIndex
     {
         get => (int)(_item?.Status ?? RepairStatus.Intake);
         set { if (_item is not null) _item.Status = (RepairStatus)value; }
     }
+
+    private string _newNoteText = string.Empty;
+    private IReadOnlyList<IBrowserFile>? _newNoteFiles;
+    private bool _addingNote;
 
     protected override async Task OnInitializedAsync()
     {

@@ -1,0 +1,21 @@
+::deep .compact-stepper .mud-stepper-nav {
+    width: 100%;
+}
+
+::deep .compact-stepper .mud-step {
+    padding: 6px 8px;
+}
+
+::deep .compact-stepper .mud-step-label {
+    gap: 6px;
+}
+
+::deep .compact-stepper .mud-step-label-icon {
+    height: 18px;
+    width: 18px;
+    font-size: 10px;
+}
+
+::deep .compact-stepper .mud-stepper-actions {
+    display: none;
+}
