@@ -5,7 +5,7 @@ COPY RepairTracker/RepairTracker.csproj RepairTracker/
 RUN dotnet restore RepairTracker/RepairTracker.csproj
 
 COPY RepairTracker/ RepairTracker/
-RUN dotnet publish RepairTracker/RepairTracker.csproj -c Release -o /app/publish --no-restore
+RUN dotnet publish RepairTracker/RepairTracker.csproj -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
