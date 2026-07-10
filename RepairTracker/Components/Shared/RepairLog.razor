@@ -1,0 +1,312 @@
+@inject IItemService ItemService
+@inject ISnackbar Snackbar
+@inject IWebHostEnvironment Env
+@inject IConfiguration Config
+
+<MudCard>
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">Repair Log</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudTextField @bind-Value="_newNoteText" Label="Note" Lines="3" Class="mb-2" Immediate="true" />
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-1">
+            <MudFileUpload T="IReadOnlyList<IBrowserFile>"
+                           FilesChanged="OnNewNoteFilesChanged"
+                           Accept=".jpg,.jpeg,.png,.gif,.webp">
+                <ActivatorContent>
+                    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.AttachFile">
+                        Attach Pictures
+                    </MudButton>
+                </ActivatorContent>
+            </MudFileUpload>
+        </MudStack>
+        @if (_newNoteFiles.Count > 0)
+        {
+            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2" Class="mb-1">
+                @foreach (var file in _newNoteFiles)
+                {
+                    <MudChip T="string" Text="@file.Name" OnClose="@(() => RemoveNewNoteFile(file))" Color="Color.Secondary" Variant="Variant.Text" />
+                }
+            </MudStack>
+        }
+        @if (IsNew)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                This note (and any attached pictures) will be saved when you create the item.
+            </MudText>
+        }
+        else
+        {
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary"
+                       OnClick="AddNote" Disabled="@(_addingNote || (string.IsNullOrWhiteSpace(_newNoteText) && _newNoteFiles.Count == 0))">
+                @if (_addingNote)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                }
+                Add Note
+            </MudButton>
+        }
+
+        @if (Item.Notes.Any())
+        {
+            <MudDivider Class="my-4" />
+            <MudTimeline TimelinePosition="TimelinePosition.Start">
+                @foreach (var note in Item.Notes.OrderByDescending(n => n.CreatedAt))
+                {
+                    <MudTimelineItem Color="Color.Primary" Size="Size.Small">
+                        <ItemContent>
+                            @if (_editingNoteId == note.Id)
+                            {
+                                <MudStack Spacing="2" Class="pb-4">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">
+                                            @note.StatusAtTime.ToDisplayString()
+                                        </MudChip>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                            @note.CreatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
+                                        </MudText>
+                                    </MudStack>
+                                    <MudTextField @bind-Value="_editNoteText" Label="Note" Lines="3" Immediate="true" />
+                                    @if (_editImagePaths.Count > 0)
+                                    {
+                                        <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
+                                            @foreach (var path in _editImagePaths)
+                                            {
+                                                <div style="position:relative;">
+                                                    <img src="/@path" alt="Note image"
+                                                         style="height:80px;width:80px;object-fit:cover;border-radius:4px;" />
+                                                    <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small"
+                                                                   Color="Color.Error" Variant="Variant.Filled"
+                                                                   OnClick="@(() => RemoveEditImage(path))"
+                                                                   Style="position:absolute;top:-10px;right:-10px;" />
+                                                </div>
+                                            }
+                                        </MudStack>
+                                    }
+                                    <MudFileUpload T="IReadOnlyList<IBrowserFile>"
+                                                   FilesChanged="OnEditNoteFilesChanged"
+                                                   Accept=".jpg,.jpeg,.png,.gif,.webp">
+                                        <ActivatorContent>
+                                            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.AttachFile">
+                                                Attach Pictures
+                                            </MudButton>
+                                        </ActivatorContent>
+                                    </MudFileUpload>
+                                    @if (_editNewFiles.Count > 0)
+                                    {
+                                        <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
+                                            @foreach (var file in _editNewFiles)
+                                            {
+                                                <MudChip T="string" Text="@file.Name" OnClose="@(() => RemoveEditNewFile(file))" Color="Color.Secondary" Variant="Variant.Text" />
+                                            }
+                                        </MudStack>
+                                    }
+                                    <MudStack Row="true" Spacing="2">
+                                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                                   OnClick="@(() => SaveEditNote(note))"
+                                                   Disabled="@(_savingEdit || (string.IsNullOrWhiteSpace(_editNoteText) && _editImagePaths.Count == 0 && _editNewFiles.Count == 0))">
+                                            @if (_savingEdit)
+                                            {
+                                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                            }
+                                            Save
+                                        </MudButton>
+                                        <MudButton Variant="Variant.Outlined" OnClick="CancelEditNote" Disabled="_savingEdit">
+                                            Cancel
+                                        </MudButton>
+                                    </MudStack>
+                                </MudStack>
+                            }
+                            else
+                            {
+                                <MudStack Spacing="1" Class="pb-4">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">
+                                            @note.StatusAtTime.ToDisplayString()
+                                        </MudChip>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                            @note.CreatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
+                                        </MudText>
+                                        <MudSpacer />
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                                       OnClick="@(() => StartEditNote(note))" />
+                                    </MudStack>
+                                    <MudText>@note.Text</MudText>
+                                    @if (note.ImagePaths.Any())
+                                    {
+                                        <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mt-1">
+                                            @foreach (var path in note.ImagePaths)
+                                            {
+                                                <a href="/@path" target="_blank">
+                                                    <img src="/@path" alt="Note image"
+                                                         style="height:80px;width:80px;object-fit:cover;border-radius:4px;cursor:pointer;" />
+                                                </a>
+                                            }
+                                        </MudStack>
+                                    }
+                                </MudStack>
+                            }
+                        </ItemContent>
+                    </MudTimelineItem>
+                }
+            </MudTimeline>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-3">No notes yet.</MudText>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter, EditorRequired] public Item Item { get; set; } = null!;
+    [Parameter] public bool IsNew { get; set; }
+
+    private string _newNoteText = string.Empty;
+    private List<IBrowserFile> _newNoteFiles = new();
+    private bool _addingNote;
+
+    private string? _editingNoteId;
+    private string _editNoteText = string.Empty;
+    private List<string> _editImagePaths = new();
+    private List<string> _editRemovedImagePaths = new();
+    private List<IBrowserFile> _editNewFiles = new();
+    private bool _savingEdit;
+
+    private void OnNewNoteFilesChanged(IReadOnlyList<IBrowserFile> files)
+    {
+        _newNoteFiles.AddRange(files);
+    }
+
+    private void RemoveNewNoteFile(IBrowserFile file)
+    {
+        _newNoteFiles.Remove(file);
+    }
+
+    private string GetUploadsRoot() =>
+        Config["Uploads:Path"] is { Length: > 0 } p ? p : Path.Combine(Env.WebRootPath, "uploads");
+
+    private async Task UploadNoteFilesAsync(RepairNote note, IEnumerable<IBrowserFile> files)
+    {
+        var uploadsRoot = GetUploadsRoot();
+        var uploadDir = Path.Combine(uploadsRoot, Item.Id, note.Id);
+        Directory.CreateDirectory(uploadDir);
+
+        foreach (var file in files)
+        {
+            var safeName = Path.GetFileName(file.Name);
+            var dest = Path.Combine(uploadDir, safeName);
+            await using var stream = File.Create(dest);
+            await file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(stream);
+            note.ImagePaths.Add($"uploads/{Item.Id}/{note.Id}/{safeName}");
+        }
+    }
+
+    private void DeleteNoteImageFromDisk(string imagePath)
+    {
+        var uploadsRoot = GetUploadsRoot();
+        var relative = imagePath.StartsWith("uploads/") ? imagePath["uploads/".Length..] : imagePath;
+        var fullPath = Path.Combine(uploadsRoot, relative);
+        if (File.Exists(fullPath))
+        {
+            File.Delete(fullPath);
+        }
+    }
+
+    // Called by the parent page when creating a brand-new item, so the note is saved along with the item itself.
+    public async Task<RepairNote?> BuildDraftNoteAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newNoteText) && _newNoteFiles.Count == 0) return null;
+
+        var note = new RepairNote
+        {
+            Text = _newNoteText.Trim(),
+            StatusAtTime = Item.Status,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        if (_newNoteFiles.Count > 0)
+        {
+            await UploadNoteFilesAsync(note, _newNoteFiles);
+        }
+
+        _newNoteText = string.Empty;
+        _newNoteFiles = new();
+        return note;
+    }
+
+    private async Task AddNote()
+    {
+        _addingNote = true;
+
+        var note = await BuildDraftNoteAsync();
+        if (note is not null)
+        {
+            Item.Notes.Add(note);
+            await ItemService.UpdateAsync(Item);
+            Snackbar.Add("Note added", Severity.Success);
+        }
+
+        _addingNote = false;
+    }
+
+    private void StartEditNote(RepairNote note)
+    {
+        _editingNoteId = note.Id;
+        _editNoteText = note.Text;
+        _editImagePaths = new List<string>(note.ImagePaths);
+        _editRemovedImagePaths = new();
+        _editNewFiles = new();
+    }
+
+    private void CancelEditNote()
+    {
+        _editingNoteId = null;
+        _editNoteText = string.Empty;
+        _editImagePaths = new();
+        _editRemovedImagePaths = new();
+        _editNewFiles = new();
+    }
+
+    private void RemoveEditImage(string path)
+    {
+        _editImagePaths.Remove(path);
+        _editRemovedImagePaths.Add(path);
+    }
+
+    private void OnEditNoteFilesChanged(IReadOnlyList<IBrowserFile> files)
+    {
+        _editNewFiles.AddRange(files);
+    }
+
+    private void RemoveEditNewFile(IBrowserFile file)
+    {
+        _editNewFiles.Remove(file);
+    }
+
+    private async Task SaveEditNote(RepairNote note)
+    {
+        _savingEdit = true;
+
+        note.Text = _editNoteText.Trim();
+        note.ImagePaths = _editImagePaths;
+
+        if (_editNewFiles.Count > 0)
+        {
+            await UploadNoteFilesAsync(note, _editNewFiles);
+        }
+
+        foreach (var removed in _editRemovedImagePaths)
+        {
+            DeleteNoteImageFromDisk(removed);
+        }
+
+        await ItemService.UpdateAsync(Item);
+        Snackbar.Add("Note updated", Severity.Success);
+
+        CancelEditNote();
+        _savingEdit = false;
+    }
+}
