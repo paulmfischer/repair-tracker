@@ -14,6 +14,8 @@ RUN mkdir -p wwwroot/uploads
 
 COPY --from=build /app/publish .
 
+ARG GIT_COMMIT=unknown
+ENV GIT_COMMIT=$GIT_COMMIT
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 

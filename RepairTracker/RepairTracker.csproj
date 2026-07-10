@@ -12,4 +12,14 @@
     <PackageReference Include="MudBlazor" Version="8.8.0" />
   </ItemGroup>
 
+  <Target Name="SetSourceRevisionIdFromGit" BeforeTargets="GetAssemblyVersion" Condition="'$(SourceRevisionId)' == '' AND Exists('$(MSBuildProjectDirectory)/../.git')">
+    <Exec Command="git rev-parse HEAD" ConsoleToMSBuild="true" IgnoreExitCode="true" StandardOutputImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="SourceRevisionId" />
+      <Output TaskParameter="ExitCode" PropertyName="GitExitCode" />
+    </Exec>
+    <PropertyGroup Condition="'$(GitExitCode)' != '0'">
+      <SourceRevisionId></SourceRevisionId>
+    </PropertyGroup>
+  </Target>
+
 </Project>

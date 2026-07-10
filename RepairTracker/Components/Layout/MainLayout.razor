@@ -1,3 +1,4 @@
+@using System.Reflection
 @inherits LayoutComponentBase
 
 <MudProviders />
@@ -9,11 +10,15 @@
         <MudText Typo="Typo.h6" Class="ml-3">Repair Tracker</MudText>
     </MudAppBar>
 
-    <MudDrawer @bind-Open="_drawerOpen" Elevation="2">
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="2" Class="d-flex flex-column">
         <MudDrawerHeader>
             <MudText Typo="Typo.h6">Navigation</MudText>
         </MudDrawerHeader>
         <NavMenu />
+        <MudSpacer />
+        <MudText Typo="Typo.caption" Class="pa-4 mud-text-secondary">
+            ver: @_versionLabel
+        </MudText>
     </MudDrawer>
 
     <MudMainContent>
@@ -25,6 +30,26 @@
 
 @code {
     private bool _drawerOpen = true;
+    private string _versionLabel = "dev";
 
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    protected override void OnInitialized()
+    {
+        var commit = Environment.GetEnvironmentVariable("GIT_COMMIT");
+
+        if (string.IsNullOrWhiteSpace(commit) || commit == "unknown")
+        {
+            // Set at build time via RepairTracker.csproj's SetSourceRevisionIdFromGit target,
+            // so `dotnet run` locally still shows the commit the running build was compiled from.
+            commit = Assembly.GetExecutingAssembly()
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+                .InformationalVersion.Split('+').ElementAtOrDefault(1);
+        }
+
+        if (!string.IsNullOrWhiteSpace(commit))
+        {
+            _versionLabel = commit.Length > 7 ? commit[..7] : commit;
+        }
+    }
 }
