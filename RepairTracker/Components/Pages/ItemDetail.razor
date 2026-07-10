@@ -44,6 +44,7 @@ else if (_item is not null)
                     </MudSelect>
                     <MudTextField @bind-Value="_item.PurchaseListingId" Label="Purchase Listing ID" Class="mb-3" />
                     <MudTextField @bind-Value="_item.SaleListingId" Label="Sale Listing ID" Class="mb-3" />
+                    <MudTextField @bind-Value="_item.GeneralNotes" Label="Notes" Lines="3" Class="mb-3" />
                     <MudTextField @bind-Value="_item.OriginalFault" Label="Original Fault"
                                   Lines="3" />
                 </MudExpansionPanel>
@@ -120,28 +121,30 @@ else if (_item is not null)
                     </CardHeaderContent>
                 </MudCardHeader>
                 <MudCardContent>
+                    <MudTextField @bind-Value="_newNoteText" Label="Note" Lines="3" Class="mb-2" />
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-1">
+                        <MudFileUpload T="IReadOnlyList<IBrowserFile>"
+                                       FilesChanged="@(files => _newNoteFiles = files)"
+                                       Accept=".jpg,.jpeg,.png,.gif,.webp">
+                            <ActivatorContent>
+                                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.AttachFile">
+                                    Attach Pictures
+                                </MudButton>
+                            </ActivatorContent>
+                        </MudFileUpload>
+                        @if (_newNoteFiles?.Count > 0)
+                        {
+                            <MudText Typo="Typo.caption">@_newNoteFiles.Count picture(s) selected</MudText>
+                        }
+                    </MudStack>
                     @if (_isNew)
                     {
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">Save the item first to add notes.</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            This note (and any attached pictures) will be saved when you create the item.
+                        </MudText>
                     }
                     else
                     {
-                        <MudTextField @bind-Value="_newNoteText" Label="Note" Lines="3" Class="mb-2" />
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-1">
-                            <MudFileUpload T="IReadOnlyList<IBrowserFile>"
-                                           FilesChanged="@(files => _newNoteFiles = files)"
-                                           Accept=".jpg,.jpeg,.png,.gif,.webp">
-                                <ActivatorContent>
-                                    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.AttachFile">
-                                        Attach Pictures
-                                    </MudButton>
-                                </ActivatorContent>
-                            </MudFileUpload>
-                            @if (_newNoteFiles?.Count > 0)
-                            {
-                                <MudText Typo="Typo.caption">@_newNoteFiles.Count picture(s) selected</MudText>
-                            }
-                        </MudStack>
                         <MudButton Variant="Variant.Filled" Color="Color.Secondary"
                                    OnClick="AddNote" Disabled="@(_addingNote || string.IsNullOrWhiteSpace(_newNoteText))">
                             @if (_addingNote)
@@ -150,47 +153,47 @@ else if (_item is not null)
                             }
                             Add Note
                         </MudButton>
+                    }
 
-                        @if (_item.Notes.Any())
-                        {
-                            <MudDivider Class="my-4" />
-                            <MudTimeline TimelinePosition="TimelinePosition.Start">
-                                @foreach (var note in _item.Notes.OrderByDescending(n => n.CreatedAt))
-                                {
-                                    <MudTimelineItem Color="Color.Primary" Size="Size.Small">
-                                        <ItemContent>
-                                            <MudStack Spacing="1" Class="pb-4">
-                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">
-                                                        @note.StatusAtTime.ToDisplayString()
-                                                    </MudChip>
-                                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                                        @note.CreatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
-                                                    </MudText>
-                                                </MudStack>
-                                                <MudText>@note.Text</MudText>
-                                                @if (note.ImagePaths.Any())
-                                                {
-                                                    <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mt-1">
-                                                        @foreach (var path in note.ImagePaths)
-                                                        {
-                                                            <a href="/@path" target="_blank">
-                                                                <img src="/@path" alt="Note image"
-                                                                     style="height:80px;width:80px;object-fit:cover;border-radius:4px;cursor:pointer;" />
-                                                            </a>
-                                                        }
-                                                    </MudStack>
-                                                }
+                    @if (_item.Notes.Any())
+                    {
+                        <MudDivider Class="my-4" />
+                        <MudTimeline TimelinePosition="TimelinePosition.Start">
+                            @foreach (var note in _item.Notes.OrderByDescending(n => n.CreatedAt))
+                            {
+                                <MudTimelineItem Color="Color.Primary" Size="Size.Small">
+                                    <ItemContent>
+                                        <MudStack Spacing="1" Class="pb-4">
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">
+                                                    @note.StatusAtTime.ToDisplayString()
+                                                </MudChip>
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                    @note.CreatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
+                                                </MudText>
                                             </MudStack>
-                                        </ItemContent>
-                                    </MudTimelineItem>
-                                }
-                            </MudTimeline>
-                        }
-                        else
-                        {
-                            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-3">No notes yet.</MudText>
-                        }
+                                            <MudText>@note.Text</MudText>
+                                            @if (note.ImagePaths.Any())
+                                            {
+                                                <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mt-1">
+                                                    @foreach (var path in note.ImagePaths)
+                                                    {
+                                                        <a href="/@path" target="_blank">
+                                                            <img src="/@path" alt="Note image"
+                                                                 style="height:80px;width:80px;object-fit:cover;border-radius:4px;cursor:pointer;" />
+                                                        </a>
+                                                    }
+                                                </MudStack>
+                                            }
+                                        </MudStack>
+                                    </ItemContent>
+                                </MudTimelineItem>
+                            }
+                        </MudTimeline>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-3">No notes yet.</MudText>
                     }
                 </MudCardContent>
             </MudCard>
@@ -278,10 +281,9 @@ else if (_item is not null)
         };
     }
 
-    private async Task AddNote()
+    private async Task<RepairNote?> BuildDraftNoteAsync()
     {
-        if (_item is null || string.IsNullOrWhiteSpace(_newNoteText)) return;
-        _addingNote = true;
+        if (_item is null || string.IsNullOrWhiteSpace(_newNoteText)) return null;
 
         var note = new RepairNote
         {
@@ -306,12 +308,24 @@ else if (_item is not null)
             }
         }
 
-        _item.Notes.Add(note);
-        await ItemService.UpdateAsync(_item);
-
         _newNoteText = string.Empty;
         _newNoteFiles = null;
-        Snackbar.Add("Note added", Severity.Success);
+        return note;
+    }
+
+    private async Task AddNote()
+    {
+        if (_item is null) return;
+        _addingNote = true;
+
+        var note = await BuildDraftNoteAsync();
+        if (note is not null)
+        {
+            _item.Notes.Add(note);
+            await ItemService.UpdateAsync(_item);
+            Snackbar.Add("Note added", Severity.Success);
+        }
+
         _addingNote = false;
     }
 
@@ -322,6 +336,12 @@ else if (_item is not null)
 
         if (_isNew)
         {
+            var note = await BuildDraftNoteAsync();
+            if (note is not null)
+            {
+                _item.Notes.Add(note);
+            }
+
             await ItemService.CreateAsync(_item);
             Snackbar.Add("Item created", Severity.Success);
             Nav.NavigateTo($"/items/{_item.Id}");
