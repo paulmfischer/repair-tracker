@@ -121,10 +121,10 @@ else if (_item is not null)
                     </CardHeaderContent>
                 </MudCardHeader>
                 <MudCardContent>
-                    <MudTextField @bind-Value="_newNoteText" Label="Note" Lines="3" Class="mb-2" />
+                    <MudTextField @bind-Value="_newNoteText" Label="Note" Lines="3" Class="mb-2" Immediate="true" />
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-1">
                         <MudFileUpload T="IReadOnlyList<IBrowserFile>"
-                                       FilesChanged="@(files => _newNoteFiles = files)"
+                                       FilesChanged="OnNewNoteFilesChanged"
                                        Accept=".jpg,.jpeg,.png,.gif,.webp">
                             <ActivatorContent>
                                 <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.AttachFile">
@@ -132,11 +132,16 @@ else if (_item is not null)
                                 </MudButton>
                             </ActivatorContent>
                         </MudFileUpload>
-                        @if (_newNoteFiles?.Count > 0)
-                        {
-                            <MudText Typo="Typo.caption">@_newNoteFiles.Count picture(s) selected</MudText>
-                        }
                     </MudStack>
+                    @if (_newNoteFiles.Count > 0)
+                    {
+                        <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2" Class="mb-1">
+                            @foreach (var file in _newNoteFiles)
+                            {
+                                <MudChip T="string" Text="@file.Name" OnClose="@(() => RemoveNewNoteFile(file))" Color="Color.Secondary" Variant="Variant.Text" />
+                            }
+                        </MudStack>
+                    }
                     @if (_isNew)
                     {
                         <MudText Typo="Typo.body2" Color="Color.Secondary">
@@ -146,7 +151,7 @@ else if (_item is not null)
                     else
                     {
                         <MudButton Variant="Variant.Filled" Color="Color.Secondary"
-                                   OnClick="AddNote" Disabled="@(_addingNote || string.IsNullOrWhiteSpace(_newNoteText))">
+                                   OnClick="AddNote" Disabled="@(_addingNote || (string.IsNullOrWhiteSpace(_newNoteText) && _newNoteFiles.Count == 0))">
                             @if (_addingNote)
                             {
                                 <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
@@ -241,8 +246,18 @@ else if (_item is not null)
     }
 
     private string _newNoteText = string.Empty;
-    private IReadOnlyList<IBrowserFile>? _newNoteFiles;
+    private List<IBrowserFile> _newNoteFiles = new();
     private bool _addingNote;
+
+    private void OnNewNoteFilesChanged(IReadOnlyList<IBrowserFile> files)
+    {
+        _newNoteFiles.AddRange(files);
+    }
+
+    private void RemoveNewNoteFile(IBrowserFile file)
+    {
+        _newNoteFiles.Remove(file);
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -283,7 +298,8 @@ else if (_item is not null)
 
     private async Task<RepairNote?> BuildDraftNoteAsync()
     {
-        if (_item is null || string.IsNullOrWhiteSpace(_newNoteText)) return null;
+        if (_item is null) return null;
+        if (string.IsNullOrWhiteSpace(_newNoteText) && _newNoteFiles.Count == 0) return null;
 
         var note = new RepairNote
         {
@@ -292,7 +308,7 @@ else if (_item is not null)
             CreatedAt = DateTime.UtcNow
         };
 
-        if (_newNoteFiles?.Count > 0)
+        if (_newNoteFiles.Count > 0)
         {
             var uploadsRoot = Config["Uploads:Path"] is { Length: > 0 } p ? p : Path.Combine(Env.WebRootPath, "uploads");
             var uploadDir = Path.Combine(uploadsRoot, _item.Id, note.Id);
@@ -309,7 +325,7 @@ else if (_item is not null)
         }
 
         _newNoteText = string.Empty;
-        _newNoteFiles = null;
+        _newNoteFiles = new();
         return note;
     }
 
