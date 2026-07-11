@@ -50,7 +50,7 @@ else
             </TemplateColumn>
             <TemplateColumn Title="Status">
                 <CellTemplate>
-                    <MudChip T="string" Size="Size.Small" Color="@context.Item.Status.ToColor()" Style="@context.Item.Status.ToChipStyle()">
+                    <MudChip T="string" Size="Size.Small" Color="@context.Item.Status.ToColor()">
                         @context.Item.Status.ToDisplayString()
                     </MudChip>
                 </CellTemplate>

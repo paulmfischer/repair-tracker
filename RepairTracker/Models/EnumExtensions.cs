@@ -13,21 +13,16 @@ public static class EnumExtensions
         return display?.Name ?? value.ToString();
     }
 
+    // Color.Tertiary is repurposed (see MudProviders.razor's theme) as the dedicated Intake
+    // color, since it isn't used anywhere else in the app.
     public static Color ToColor(this RepairStatus status) => status switch
     {
-        RepairStatus.Intake => Color.Default,
+        RepairStatus.Intake => Color.Tertiary,
         RepairStatus.Diagnosis => Color.Warning,
         RepairStatus.PartsOrdered => Color.Info,
         RepairStatus.Repaired => Color.Success,
         RepairStatus.Listed => Color.Primary,
         RepairStatus.Sold => Color.Dark,
-        _ => Color.Default
+        _ => Color.Dark
     };
-
-    // MudChip's Color.Default renders darker than the light gray MudTimelineItem's Color.Default
-    // uses for its dot; apply this style to Intake chips so they match the timeline dot.
-    public static string? ToChipStyle(this RepairStatus status) =>
-        status == RepairStatus.Intake
-            ? "background-color:var(--mud-palette-gray-light);color:rgba(0,0,0,0.87)"
-            : null;
 }
