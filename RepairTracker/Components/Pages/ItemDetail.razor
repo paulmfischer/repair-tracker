@@ -21,10 +21,12 @@ else if (_item is not null)
 {
     <MudGrid>
         <MudItem xs="12">
-            <MudStepper @bind-ActiveIndex="_statusIndex" NonLinear="true" Class="compact-stepper mb-2">
+            <MudStepper @bind-ActiveIndex="_statusIndex" NonLinear="true" Class="compact-stepper mb-2"
+                        CurrentStepColor="@_item.Status.ToColor()">
                 @foreach (var status in Enum.GetValues<RepairStatus>())
                 {
-                    <MudStep Title="@status.ToDisplayString()" Completed="@(status < _item.Status)" />
+                    <MudStep Title="@status.ToDisplayString()" Completed="@(status < _item.Status)"
+                             CompletedStepColor="@status.ToColor()" />
                 }
             </MudStepper>
         </MudItem>

@@ -66,7 +66,7 @@ else if (_stats is not null)
         {
             <MudItem xs="6" sm="4" md="2">
                 <MudPaper Class="pa-3 text-center" Elevation="1">
-                    <MudChip T="string" Color="@StatusColor(kvp.Key)" Size="Size.Small">
+                    <MudChip T="string" Color="@kvp.Key.ToColor()" Style="@kvp.Key.ToChipStyle()" Size="Size.Small">
                         @kvp.Key.ToDisplayString()
                     </MudChip>
                     <MudText Typo="Typo.h4">@kvp.Value</MudText>
@@ -89,15 +89,4 @@ else if (_stats is not null)
 
     private static string ProfitColor(decimal value) =>
         value >= 0 ? "color:green" : "color:red";
-
-    private static Color StatusColor(RepairStatus status) => status switch
-    {
-        RepairStatus.Intake => Color.Default,
-        RepairStatus.Diagnosis => Color.Warning,
-        RepairStatus.PartsOrdered => Color.Info,
-        RepairStatus.Repaired => Color.Success,
-        RepairStatus.Listed => Color.Primary,
-        RepairStatus.Sold => Color.Dark,
-        _ => Color.Default
-    };
 }

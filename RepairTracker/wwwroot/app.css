@@ -60,3 +60,20 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* MudBlazor doesn't emit a background class for Color.Default steps, so they fall back to
+   --mud-palette-text-disabled via .mud-stepper .mud-stepper-nav .mud-step .mud-step-label .mud-step-label-icon.
+   Match that selector's specificity (with an extra qualifier to be safe) so the Intake step icon
+   matches the gray-light color used for the Intake chip/dot elsewhere in the app. Scoped CSS
+   isolation (::deep) can't reach this element because MudStepper renders it internally without
+   ever receiving the page's scope attribute. */
+.compact-stepper.mud-stepper .mud-stepper-nav .mud-step .mud-step-label .mud-step-label-icon {
+    background-color: var(--mud-palette-gray-light);
+    color: rgba(0, 0, 0, 0.87);
+}
+
+/* Nudge the timeline dot down slightly so it lines up with the top of the note content
+   (chip + timestamp row) instead of the very top edge. */
+.repair-log-timeline .mud-timeline-item-divider {
+    padding-top: 4px;
+}

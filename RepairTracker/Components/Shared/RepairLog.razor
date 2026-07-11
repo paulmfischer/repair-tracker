@@ -52,16 +52,16 @@
         @if (Item.Notes.Any())
         {
             <MudDivider Class="my-4" />
-            <MudTimeline TimelinePosition="TimelinePosition.Start">
+            <MudTimeline TimelinePosition="TimelinePosition.Start" TimelineAlign="TimelineAlign.Start" Class="repair-log-timeline">
                 @foreach (var note in Item.Notes.OrderByDescending(n => n.CreatedAt))
                 {
-                    <MudTimelineItem Color="Color.Primary" Size="Size.Small">
+                    <MudTimelineItem Color="@note.StatusAtTime.ToColor()" Variant="Variant.Filled" Size="Size.Small">
                         <ItemContent>
                             @if (_editingNoteId == note.Id)
                             {
                                 <MudStack Spacing="2" Class="pb-4">
                                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">
+                                        <MudChip T="string" Size="Size.Small" Color="@note.StatusAtTime.ToColor()" Variant="Variant.Filled" Style="@note.StatusAtTime.ToChipStyle()">
                                             @note.StatusAtTime.ToDisplayString()
                                         </MudChip>
                                         <MudText Typo="Typo.caption" Color="Color.Secondary">
@@ -123,7 +123,7 @@
                             {
                                 <MudStack Spacing="1" Class="pb-4">
                                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">
+                                        <MudChip T="string" Size="Size.Small" Color="@note.StatusAtTime.ToColor()" Variant="Variant.Filled" Style="@note.StatusAtTime.ToChipStyle()">
                                             @note.StatusAtTime.ToDisplayString()
                                         </MudChip>
                                         <MudText Typo="Typo.caption" Color="Color.Secondary">

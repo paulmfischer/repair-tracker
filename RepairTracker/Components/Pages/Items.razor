@@ -50,7 +50,7 @@ else
             </TemplateColumn>
             <TemplateColumn Title="Status">
                 <CellTemplate>
-                    <MudChip T="string" Size="Size.Small" Color="@StatusColor(context.Item.Status)">
+                    <MudChip T="string" Size="Size.Small" Color="@context.Item.Status.ToColor()" Style="@context.Item.Status.ToChipStyle()">
                         @context.Item.Status.ToDisplayString()
                     </MudChip>
                 </CellTemplate>
@@ -138,15 +138,4 @@ else
             Snackbar.Add("Item deleted", Severity.Info);
         }
     }
-
-    private static Color StatusColor(RepairStatus status) => status switch
-    {
-        RepairStatus.Intake => Color.Default,
-        RepairStatus.Diagnosis => Color.Warning,
-        RepairStatus.PartsOrdered => Color.Info,
-        RepairStatus.Repaired => Color.Success,
-        RepairStatus.Listed => Color.Primary,
-        RepairStatus.Sold => Color.Dark,
-        _ => Color.Default
-    };
 }
