@@ -78,7 +78,8 @@ else
             </TemplateColumn>
             <TemplateColumn Title="Status">
                 <CellTemplate>
-                    <MudChip T="string" Size="Size.Small" Color="@context.Item.Status.ToColor()">
+                    <MudChip T="string" Size="Size.Small" Color="@context.Item.Status.ToColor()"
+                             Style="@context.Item.Status.ToColorStyle()">
                         @context.Item.Status.ToDisplayString()
                     </MudChip>
                 </CellTemplate>

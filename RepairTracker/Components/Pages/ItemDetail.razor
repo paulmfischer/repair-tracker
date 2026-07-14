@@ -21,14 +21,23 @@ else if (_item is not null)
 {
     <MudGrid>
         <MudItem xs="12">
-            <MudStepper @bind-ActiveIndex="_statusIndex" NonLinear="true" Class="compact-stepper mb-2"
-                        CurrentStepColor="@_item.Status.ToColor()">
-                @foreach (var status in Enum.GetValues<RepairStatus>())
-                {
-                    <MudStep Title="@status.ToDisplayString()" Completed="@(status < _item.Status)"
-                             CompletedStepColor="@status.ToColor()" />
-                }
-            </MudStepper>
+            @if (_item.Status == RepairStatus.Parts)
+            {
+                <MudAlert Severity="Severity.Normal" Variant="Variant.Outlined" Class="mb-2" Style="@RepairStatus.Parts.ToOutlinedColorStyle()">
+                    This item has been converted to Parts inventory and is no longer moving through the repair flow.
+                </MudAlert>
+            }
+            else
+            {
+                <MudStepper @bind-ActiveIndex="_statusIndex" NonLinear="true" Class="compact-stepper mb-2"
+                            CurrentStepColor="@_item.Status.ToColor()">
+                    @foreach (var status in _flowStatuses)
+                    {
+                        <MudStep Title="@status.ToDisplayString()" Completed="@(status < _item.Status)"
+                                 CompletedStepColor="@status.ToColor()" />
+                    }
+                </MudStepper>
+            }
         </MudItem>
 
         <MudItem xs="12" md="4">
@@ -130,6 +139,18 @@ else if (_item is not null)
         <MudButton Variant="Variant.Outlined" Href="/items">
             Cancel
         </MudButton>
+        @if (!_isNew && _item.Status != RepairStatus.Parts && _item.Status is not (RepairStatus.Intake or RepairStatus.Sold))
+        {
+            <MudButton Variant="Variant.Outlined" Style="@RepairStatus.Parts.ToOutlinedColorStyle()" OnClick="MarkAsParts">
+                Mark as Parts
+            </MudButton>
+        }
+        @if (!_isNew && _item.Status == RepairStatus.Parts)
+        {
+            <MudButton Variant="Variant.Outlined" OnClick="ReturnToRepairFlow">
+                Return to Repair Flow
+            </MudButton>
+        }
     </MudStack>
 }
 
@@ -147,15 +168,43 @@ else if (_item is not null)
     private bool _infoExpanded;
     private bool _financialsExpanded;
 
+    // The normal, sequential repair flow — excludes Parts, which is a branch off this flow
+    // rather than a step within it.
+    private static readonly RepairStatus[] _flowStatuses =
+        Enum.GetValues<RepairStatus>().Where(s => s != RepairStatus.Parts).ToArray();
+
     private int _statusIndex
     {
-        get => (int)(_item?.Status ?? RepairStatus.Intake);
+        get => Array.IndexOf(_flowStatuses, _item?.Status ?? RepairStatus.Intake);
         set
         {
-            if (_item is null) return;
-            _item.Status = (RepairStatus)value;
+            // Once an item is Parts, ignore any writes coming through the stepper's binding —
+            // MudStepper fires a stray ActiveIndexChanged when every step reads as Completed
+            // (which happens once Status is Parts, since it sorts after every flow status),
+            // and without this guard it silently reverts Status back to a flow value.
+            if (_item is null || _item.Status == RepairStatus.Parts) return;
+            if (value < 0 || value >= _flowStatuses.Length) return;
+            _item.Status = _flowStatuses[value];
             SetDefaultPanelExpansion();
         }
+    }
+
+    private async Task MarkAsParts()
+    {
+        if (_item is null) return;
+        _item.Status = RepairStatus.Parts;
+        SetDefaultPanelExpansion();
+        await Save();
+        StateHasChanged();
+    }
+
+    private async Task ReturnToRepairFlow()
+    {
+        if (_item is null) return;
+        _item.Status = RepairStatus.Diagnosis;
+        SetDefaultPanelExpansion();
+        await Save();
+        StateHasChanged();
     }
 
     private RepairLog? _repairLog;
@@ -193,6 +242,7 @@ else if (_item is not null)
         {
             RepairStatus.Intake => (true, false),
             RepairStatus.Listed or RepairStatus.Sold => (true, true),
+            RepairStatus.Parts => (true, false),
             _ => (false, false)
         };
     }

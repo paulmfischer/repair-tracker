@@ -7,18 +7,23 @@
 
 @code {
     // Color.Tertiary isn't used anywhere else in the app, so it's repurposed here as the
-    // dedicated Intake status color.
+    // dedicated Intake status color. Secondary is just recolored away from MudBlazor's default
+    // pink/magenta.
     private readonly MudTheme _theme = new()
     {
         PaletteDark = new PaletteDark
         {
             Tertiary = "#d16084",
-            TertiaryContrastText = "#FFFFFF"
+            TertiaryContrastText = "#FFFFFF",
+            Secondary = "#4DD0E1",
+            SecondaryContrastText = "#000000"
         },
         PaletteLight = new PaletteLight
         {
             Tertiary = "#d16084",
-            TertiaryContrastText = "#FFFFFF"
+            TertiaryContrastText = "#FFFFFF",
+            Secondary = "#4DD0E1",
+            SecondaryContrastText = "#000000"
         }
     };
 }
