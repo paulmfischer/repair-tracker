@@ -1,0 +1,33 @@
+.repair-stepper {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    width: 100%;
+    overflow-x: auto;
+    gap: 4px;
+}
+
+.repair-step {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+/* MudText renders its own root element (a <p>/<span>) that our file didn't author, so reaching
+   it requires ::deep — unlike the plain divs above, which are scoped to this file directly and
+   must NOT use ::deep (that requires an ancestor to carry the scope attribute, not the element
+   itself, which breaks self-authored elements). */
+::deep .repair-step-label {
+    white-space: nowrap;
+}
+
+.repair-step-connector {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 24px;
+    min-width: 24px;
+    height: 2px;
+    background-color: var(--mud-palette-lines-default);
+    border-radius: 1px;
+}

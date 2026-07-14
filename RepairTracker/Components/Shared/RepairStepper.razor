@@ -1,0 +1,40 @@
+<div class="repair-stepper @Class">
+    @for (var i = 0; i < FlowStatuses.Length; i++)
+    {
+        var status = FlowStatuses[i];
+        var isLastStep = i == FlowStatuses.Length - 1;
+        var completed = isLastStep ? status <= Status : status < Status;
+        <div class="repair-step">
+            <MudFab Color="Color.Default" Size="Size.Small"
+                    StartIcon="@(completed ? Icons.Material.Filled.Check : null)"
+                    Style="@GetStepDotStyle(status)"
+                    OnClick="@(() => StatusChanged.InvokeAsync(status))" />
+            <MudText Typo="Typo.caption" Class="repair-step-label">@status.ToDisplayString()</MudText>
+        </div>
+        @if (i < FlowStatuses.Length - 1)
+        {
+            <div class="repair-step-connector" style="@(completed ? status.ToColorStyle() : null)"></div>
+        }
+    }
+</div>
+
+@code {
+    // The normal, sequential repair flow — excludes Parts, which is a branch off this flow
+    // rather than a step within it.
+    private static readonly RepairStatus[] FlowStatuses =
+        Enum.GetValues<RepairStatus>().Where(s => s != RepairStatus.Parts).ToArray();
+
+    [Parameter, EditorRequired] public RepairStatus Status { get; set; }
+    [Parameter] public EventCallback<RepairStatus> StatusChanged { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    // Fixed sizing keeps the dot compact regardless of state; min-height needs an explicit
+    // override too since MudFab's base CSS sets min-height:36px, which would otherwise clamp
+    // our smaller height. The status color/text color are layered on top once a step is reached
+    // (completed or current) — otherwise it's left at MudFab's default circular look.
+    private string GetStepDotStyle(RepairStatus status)
+    {
+        const string size = "width:28px;height:28px;min-width:28px;min-height:28px;";
+        return Status >= status ? size + status.ToColorStyle() : size;
+    }
+}

@@ -29,14 +29,7 @@ else if (_item is not null)
             }
             else
             {
-                <MudStepper @bind-ActiveIndex="_statusIndex" NonLinear="true" Class="compact-stepper mb-2"
-                            CurrentStepColor="@_item.Status.ToColor()">
-                    @foreach (var status in _flowStatuses)
-                    {
-                        <MudStep Title="@status.ToDisplayString()" Completed="@(status < _item.Status)"
-                                 CompletedStepColor="@status.ToColor()" />
-                    }
-                </MudStepper>
+                <RepairStepper Status="_item.Status" StatusChanged="SelectStatus" Class="mb-2" />
             }
         </MudItem>
 
@@ -168,25 +161,12 @@ else if (_item is not null)
     private bool _infoExpanded;
     private bool _financialsExpanded;
 
-    // The normal, sequential repair flow — excludes Parts, which is a branch off this flow
-    // rather than a step within it.
-    private static readonly RepairStatus[] _flowStatuses =
-        Enum.GetValues<RepairStatus>().Where(s => s != RepairStatus.Parts).ToArray();
-
-    private int _statusIndex
+    // The stepper is non-linear — clicking any step jumps straight to its status.
+    private void SelectStatus(RepairStatus status)
     {
-        get => Array.IndexOf(_flowStatuses, _item?.Status ?? RepairStatus.Intake);
-        set
-        {
-            // Once an item is Parts, ignore any writes coming through the stepper's binding —
-            // MudStepper fires a stray ActiveIndexChanged when every step reads as Completed
-            // (which happens once Status is Parts, since it sorts after every flow status),
-            // and without this guard it silently reverts Status back to a flow value.
-            if (_item is null || _item.Status == RepairStatus.Parts) return;
-            if (value < 0 || value >= _flowStatuses.Length) return;
-            _item.Status = _flowStatuses[value];
-            SetDefaultPanelExpansion();
-        }
+        if (_item is null || _item.Status == RepairStatus.Parts) return;
+        _item.Status = status;
+        SetDefaultPanelExpansion();
     }
 
     private async Task MarkAsParts()
