@@ -42,7 +42,35 @@ else
                  RowClick='e => Nav.NavigateTo($"/items/{e.Item.Id}")'
                  Style="cursor:pointer">
         <Columns>
-            <PropertyColumn Property="x => x.Name" Title="Item" />
+            <TemplateColumn Title="Item">
+                <CellTemplate>
+                    <MudStack Spacing="0">
+                        <MudText>@context.Item.Name</MudText>
+                        @if (!string.IsNullOrWhiteSpace(context.Item.SerialNumber) || !string.IsNullOrWhiteSpace(context.Item.OriginalFault))
+                        {
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                                @if (!string.IsNullOrWhiteSpace(context.Item.SerialNumber))
+                                {
+                                    <span>S/N: @context.Item.SerialNumber</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(context.Item.SerialNumber) && !string.IsNullOrWhiteSpace(context.Item.OriginalFault))
+                                {
+                                    <span> &middot; </span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(context.Item.OriginalFault))
+                                {
+                                    @context.Item.OriginalFault
+                                }
+                            </MudText>
+                        }
+                    </MudStack>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Purchased" SortBy="x => x.CreatedAt">
+                <CellTemplate>
+                    @context.Item.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")
+                </CellTemplate>
+            </TemplateColumn>
             <TemplateColumn Title="Source">
                 <CellTemplate>
                     <MudChip T="string" Size="Size.Small">@context.Item.Source.ToDisplayString()</MudChip>
