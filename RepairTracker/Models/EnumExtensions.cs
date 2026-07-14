@@ -13,37 +13,37 @@ public static class EnumExtensions
         return display?.Name ?? value.ToString();
     }
 
-    // Color.Tertiary is repurposed (see MudProviders.razor's theme) as the dedicated Intake
-    // color, since it isn't used anywhere else in the app. Parts doesn't get a MudBlazor Color
-    // at all (every other enum value is already used elsewhere in the app) — it's styled
-    // directly via ToColorStyle() instead, wherever a status chip/marker is rendered.
-    public static Color ToColor(this RepairStatus status) => status switch
+    // Status colors are specified explicitly from MudBlazor's Colors palette (rather than the
+    // themed Color enum values like Primary/Success/Warning) so they stay independent of those
+    // slots' out-of-the-box use elsewhere in the app (buttons, snackbars, etc). Every status
+    // renders via ToColorStyle()/ToOutlinedColorStyle() with Color left at its default.
+    public static Color ToColor(this RepairStatus status) => Color.Default;
+
+    private static readonly Dictionary<RepairStatus, (string Hex, string TextHex)> StatusColors = new()
     {
-        RepairStatus.Intake => Color.Tertiary,
-        RepairStatus.Diagnosis => Color.Warning,
-        RepairStatus.PartsOrdered => Color.Info,
-        RepairStatus.Repaired => Color.Success,
-        RepairStatus.Listed => Color.Primary,
-        RepairStatus.Sold => Color.Dark,
-        _ => Color.Dark
+        [RepairStatus.Intake] = (Colors.Purple.Darken1, "#FFFFFF"),
+        [RepairStatus.Diagnosis] = (Colors.Orange.Darken1, "#FFFFFF"),
+        [RepairStatus.PartsOrdered] = (Colors.DeepOrange.Darken1, "#FFFFFF"),
+        [RepairStatus.Repaired] = (Colors.Teal.Darken1, "#FFFFFF"),
+        [RepairStatus.Listed] = (Colors.Blue.Darken1, "#FFFFFF"),
+        [RepairStatus.Sold] = (Colors.Green.Darken1, "#FFFFFF"),
+        [RepairStatus.Parts] = (Colors.Cyan.Darken1, "#FFFFFF"),
     };
 
-    private const string PartsHex = "#9CCC65";
-
-    // Inline style override for statuses that don't have a dedicated MudBlazor Color of their
-    // own. Apply alongside ToColor() (e.g. `Color="@status.ToColor()" Style="@status.ToColorStyle()"`)
-    // — the inline style wins over the Color-driven CSS class for statuses this covers.
-    public static string? ToColorStyle(this RepairStatus status) => status switch
+    // Inline style carrying each status's explicit MudBlazor.Colors swatch. Apply alongside
+    // ToColor() (e.g. `Color="@status.ToColor()" Style="@status.ToColorStyle()"`) — the inline
+    // style provides the actual color since ToColor() is just Color.Default.
+    public static string ToColorStyle(this RepairStatus status)
     {
-        RepairStatus.Parts => $"background-color:{PartsHex};color:#000000;",
-        _ => null
-    };
+        var (hex, textHex) = StatusColors[status];
+        return $"background-color:{hex};color:{textHex};";
+    }
 
     // Same idea as ToColorStyle(), but for outlined buttons/chips where we want the status
     // color as the border/text rather than a filled background.
-    public static string? ToOutlinedColorStyle(this RepairStatus status) => status switch
+    public static string ToOutlinedColorStyle(this RepairStatus status)
     {
-        RepairStatus.Parts => $"color:{PartsHex};border-color:{PartsHex};",
-        _ => null
-    };
+        var (hex, _) = StatusColors[status];
+        return $"color:{hex};border-color:{hex};";
+    }
 }

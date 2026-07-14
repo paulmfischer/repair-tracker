@@ -6,22 +6,18 @@
 <MudSnackbarProvider />
 
 @code {
-    // Color.Tertiary isn't used anywhere else in the app, so it's repurposed here as the
-    // dedicated Intake status color. Secondary is just recolored away from MudBlazor's default
-    // pink/magenta.
+    // Secondary is recolored away from MudBlazor's default pink/magenta. Status colors are
+    // handled separately via explicit MudBlazor.Colors swatches (see EnumExtensions), not
+    // through theme palette slots, so they don't need an entry here.
     private readonly MudTheme _theme = new()
     {
         PaletteDark = new PaletteDark
         {
-            Tertiary = "#d16084",
-            TertiaryContrastText = "#FFFFFF",
             Secondary = "#4DD0E1",
             SecondaryContrastText = "#000000"
         },
         PaletteLight = new PaletteLight
         {
-            Tertiary = "#d16084",
-            TertiaryContrastText = "#FFFFFF",
             Secondary = "#4DD0E1",
             SecondaryContrastText = "#000000"
         }

@@ -55,7 +55,7 @@
             <MudTimeline TimelinePosition="TimelinePosition.Start" TimelineAlign="TimelineAlign.Start" Class="repair-log-timeline">
                 @foreach (var note in Item.Notes.OrderByDescending(n => n.CreatedAt))
                 {
-                    <MudTimelineItem Color="@note.StatusAtTime.ToColor()" Style="@note.StatusAtTime.ToColorStyle()"
+                    <MudTimelineItem Color="@note.StatusAtTime.ToColor()" DotStyle="@note.StatusAtTime.ToColorStyle()"
                                      Variant="Variant.Filled" Size="Size.Small">
                         <ItemContent>
                             @if (_editingNoteId == note.Id)
