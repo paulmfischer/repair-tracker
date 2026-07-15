@@ -46,4 +46,6 @@ public static class EnumExtensions
         var (hex, _) = StatusColors[status];
         return $"color:{hex};border-color:{hex};";
     }
+
+    public static string ToHex(this RepairStatus status) => StatusColors[status].Hex;
 }
