@@ -18,7 +18,7 @@ else if (_stats is not null)
             <MudCard>
                 <MudCardContent>
                     <MudText Typo="Typo.overline">Est. Total Profit</MudText>
-                    <MudText Typo="Typo.h5" Style="@ProfitColor(_stats.TotalEstimatedProfit)">
+                    <MudText Typo="Typo.h5" Style="@GetColor(_stats.TotalEstimatedProfit)">
                         $@_stats.TotalEstimatedProfit.ToString("F2")
                     </MudText>
                 </MudCardContent>
@@ -28,7 +28,7 @@ else if (_stats is not null)
             <MudCard>
                 <MudCardContent>
                     <MudText Typo="Typo.overline">Actual Total Profit</MudText>
-                    <MudText Typo="Typo.h5" Style="@ProfitColor(_stats.TotalActualProfit)">
+                    <MudText Typo="Typo.h5" Style="@GetColor(_stats.TotalActualProfit)">
                         $@_stats.TotalActualProfit.ToString("F2")
                     </MudText>
                 </MudCardContent>
@@ -98,7 +98,6 @@ else if (_stats is not null)
         };
         _loading = false;
     }
-
-    private static string ProfitColor(decimal value) =>
-        value >= 0 ? "color:green" : "color:red";
+    
+    private string GetColor(decimal profit) => $"color:{profit.ProfitColor()};";
 }

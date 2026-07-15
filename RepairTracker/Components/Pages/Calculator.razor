@@ -55,7 +55,7 @@ else
                             </tr>
                             <tr style="font-weight:bold">
                                 <td>Gross Profit</td>
-                                <td class="text-right" style="color:@(_grossProfit >= 0 ? "green" : "red")">
+                                <td class="text-right" style="color:@(_grossProfit.ProfitColor())">
                                     $@_grossProfit.ToString("F2")
                                 </td>
                             </tr>

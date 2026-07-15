@@ -72,7 +72,7 @@ else if (_item is not null)
                             </tr>
                             <tr>
                                 <td><strong>Est. Profit</strong></td>
-                                <td style="color:@(_item.EstimatedProfit(_feePercent) >= 0 ? "green" : "red")">
+                                <td style="color:@(_item.EstimatedProfit(_feePercent).ProfitColor())">
                                     <strong>$@_item.EstimatedProfit(_feePercent).ToString("F2")</strong>
                                 </td>
                             </tr>
@@ -97,7 +97,7 @@ else if (_item is not null)
                             <tbody>
                                 <tr>
                                     <td><strong>Net Profit</strong></td>
-                                    <td style="color:@(_item.NetProfit >= 0 ? "green" : "red")">
+                                    <td style="color:@(_item.NetProfit.ProfitColor())">
                                         <strong>$@_item.NetProfit.ToString("F2")</strong>
                                     </td>
                                 </tr>

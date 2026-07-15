@@ -89,7 +89,7 @@ else
             </TemplateColumn>
             <TemplateColumn Title="Est. Profit">
                 <CellTemplate>
-                    <span style="color:@(context.Item.EstimatedProfit(_feePercent) >= 0 ? "green" : "red")">
+                    <span style="color:@(context.Item.EstimatedProfit(_feePercent).ProfitColor())">
                         $@context.Item.EstimatedProfit(_feePercent).ToString("F2")
                     </span>
                 </CellTemplate>
@@ -98,7 +98,7 @@ else
                 <CellTemplate>
                     @if (context.Item.ActualSellPrice > 0)
                     {
-                        <span style="color:@(context.Item.NetProfit >= 0 ? "green" : "red")">
+                        <span style="color:@(context.Item.NetProfit.ProfitColor())">
                             $@context.Item.NetProfit.ToString("F2")
                         </span>
                     }

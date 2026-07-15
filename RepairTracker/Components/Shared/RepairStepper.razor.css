@@ -22,6 +22,10 @@
     white-space: nowrap;
 }
 
+::deep .repair-step .mud-fab {
+    box-shadow: none;
+}
+
 .repair-step-connector {
     flex-grow: 1;
     flex-shrink: 1;
