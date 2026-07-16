@@ -144,6 +144,13 @@ else if (_item is not null)
                 Return to Repair Flow
             </MudButton>
         }
+        @if (!_isNew && _item.Status != RepairStatus.Intake)
+        {
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Print"
+                       Href="@($"/items/{_item.Id}/report.pdf")" Target="_blank">
+                Print Report
+            </MudButton>
+        }
     </MudStack>
 }
 
