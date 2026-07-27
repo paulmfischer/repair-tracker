@@ -1,7 +1,6 @@
 @inject IItemService ItemService
 @inject ISnackbar Snackbar
-@inject IWebHostEnvironment Env
-@inject IConfiguration Config
+@inject HttpClient Http
 
 <MudCard>
     <MudCardHeader>
@@ -188,34 +187,25 @@
         _newNoteFiles.Remove(file);
     }
 
-    private string GetUploadsRoot() =>
-        Config["Uploads:Path"] is { Length: > 0 } p ? p : Path.Combine(Env.WebRootPath, "uploads");
-
     private async Task UploadNoteFilesAsync(RepairNote note, IEnumerable<IBrowserFile> files)
     {
-        var uploadsRoot = GetUploadsRoot();
-        var uploadDir = Path.Combine(uploadsRoot, Item.Id, note.Id);
-        Directory.CreateDirectory(uploadDir);
-
+        using var content = new MultipartFormDataContent();
         foreach (var file in files)
         {
-            var safeName = Path.GetFileName(file.Name);
-            var dest = Path.Combine(uploadDir, safeName);
-            await using var stream = File.Create(dest);
-            await file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(stream);
-            note.ImagePaths.Add($"uploads/{Item.Id}/{note.Id}/{safeName}");
+            var streamContent = new StreamContent(file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+            content.Add(streamContent, "files", file.Name);
         }
+
+        var response = await Http.PostAsync($"api/items/{Item.Id}/notes/{note.Id}/images", content);
+        response.EnsureSuccessStatusCode();
+        var paths = await response.Content.ReadFromJsonAsync<List<string>>() ?? [];
+        note.ImagePaths.AddRange(paths);
     }
 
-    private void DeleteNoteImageFromDisk(string imagePath)
+    private async Task DeleteNoteImageAsync(string imagePath)
     {
-        var uploadsRoot = GetUploadsRoot();
-        var relative = imagePath.StartsWith("uploads/") ? imagePath["uploads/".Length..] : imagePath;
-        var fullPath = Path.Combine(uploadsRoot, relative);
-        if (File.Exists(fullPath))
-        {
-            File.Delete(fullPath);
-        }
+        var response = await Http.DeleteAsync($"api/images?path={Uri.EscapeDataString(imagePath)}");
+        response.EnsureSuccessStatusCode();
     }
 
     // Called by the parent page when creating a brand-new item, so the note is saved along with the item itself.
@@ -303,7 +293,7 @@
 
         foreach (var removed in _editRemovedImagePaths)
         {
-            DeleteNoteImageFromDisk(removed);
+            await DeleteNoteImageAsync(removed);
         }
 
         await ItemService.UpdateAsync(Item);

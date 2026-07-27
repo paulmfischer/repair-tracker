@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.FileProviders;
 using MongoDB.Driver;
-using MudBlazor.Services;
 using QuestPDF.Infrastructure;
-using RepairTracker.Components;
 using RepairTracker.Data;
+using RepairTracker.Server;
+using RepairTracker.Server.Components;
+using RepairTracker.Server.Endpoints;
 using RepairTracker.Services;
 
 QuestPDF.Settings.License = LicenseType.Community;
@@ -12,9 +13,7 @@ QuestPDF.Settings.License = LicenseType.Community;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
-
-builder.Services.AddMudServices();
+    .AddInteractiveWebAssemblyComponents();
 
 var mongoConnectionString = builder.Configuration.GetConnectionString("MongoDB") ?? "mongodb://localhost:27017";
 var databaseName = builder.Configuration["MongoDB:Database"] ?? "RepairTracker";
@@ -36,34 +35,31 @@ if (!string.IsNullOrWhiteSpace(dataProtectionPath))
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    app.UseWebAssemblyDebugging();
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseAntiforgery();
 
-var externalUploadsPath = app.Configuration["Uploads:Path"];
-if (!string.IsNullOrWhiteSpace(externalUploadsPath))
+// Served from outside wwwroot (see UploadsPath), and always via plain UseStaticFiles rather
+// than MapStaticAssets, since these files are written at runtime and have no build-time manifest entry.
+var uploadsRoot = UploadsPath.GetRoot(app.Environment, app.Configuration);
+Directory.CreateDirectory(uploadsRoot);
+app.UseStaticFiles(new StaticFileOptions
 {
-    Directory.CreateDirectory(externalUploadsPath);
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new PhysicalFileProvider(externalUploadsPath),
-        RequestPath = "/uploads"
-    });
-}
+    FileProvider = new PhysicalFileProvider(uploadsRoot),
+    RequestPath = "/uploads"
+});
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveWebAssemblyRenderMode()
+    .AddAdditionalAssemblies(typeof(RepairTracker.Client._Imports).Assembly);
 
-app.MapGet("/items/{id}/report.pdf", async (string id, IReportService reportService) =>
-{
-    var pdfBytes = await reportService.GenerateItemReportAsync(id);
-    return pdfBytes is null
-        ? Results.NotFound()
-        : Results.File(pdfBytes, "application/pdf", $"report-{id}.pdf");
-});
+app.MapItemsEndpoints();
+app.MapSettingsEndpoints();
+app.MapImagesEndpoints();
+app.MapReportEndpoints();
 
 app.Run();

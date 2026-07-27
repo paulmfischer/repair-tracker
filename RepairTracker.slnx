@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="RepairTracker.Client/RepairTracker.Client.csproj" />
+  <Project Path="RepairTracker.Server/RepairTracker.Server.csproj" />
+  <Project Path="RepairTracker.Shared/RepairTracker.Shared.csproj" />
+</Solution>

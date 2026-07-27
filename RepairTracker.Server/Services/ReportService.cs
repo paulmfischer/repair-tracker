@@ -2,6 +2,7 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using RepairTracker.Models;
+using RepairTracker.Server;
 
 namespace RepairTracker.Services;
 
@@ -161,6 +162,5 @@ public class ReportService(IItemService itemService, IWebHostEnvironment env, IC
         return images;
     }
 
-    private string GetUploadsRoot() =>
-        config["Uploads:Path"] is { Length: > 0 } p ? p : Path.Combine(env.WebRootPath, "uploads");
+    private string GetUploadsRoot() => UploadsPath.GetRoot(env, config);
 }
