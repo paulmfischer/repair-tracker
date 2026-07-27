@@ -48,7 +48,7 @@ artifacts/
 *.VC.VC.opendb
 
 # VS Code
-.vscode/
+.vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
