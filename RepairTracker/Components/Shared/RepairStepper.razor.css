@@ -1,10 +1,40 @@
-.repair-stepper {
+.repair-stepper-wide {
     display: flex;
     align-items: center;
     flex-wrap: nowrap;
     width: 100%;
     overflow-x: auto;
     gap: 4px;
+}
+
+.repair-stepper-narrow {
+    display: none;
+}
+
+/* Below MudBlazor's sm breakpoint the labeled steps don't fit on one line, forcing the whole
+   bar into horizontal scrolling — hard to see or tap the right step. Swap to a dropdown instead. */
+@media (max-width: 600px) {
+    .repair-stepper-wide {
+        display: none;
+    }
+
+    .repair-stepper-narrow {
+        display: block;
+    }
+}
+
+.repair-select-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.repair-select-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
 }
 
 .repair-step {

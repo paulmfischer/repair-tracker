@@ -1,4 +1,4 @@
-<div class="repair-stepper @Class">
+<div class="repair-stepper-wide @Class">
     @for (var i = 0; i < FlowStatuses.Length; i++)
     {
         var status = FlowStatuses[i];
@@ -16,6 +16,22 @@
             <div class="repair-step-connector" style="@(completed ? status.ToColorStyle() : null)"></div>
         }
     }
+</div>
+
+<div class="repair-stepper-narrow @Class">
+    <MudSelect T="RepairStatus" Value="Status" ValueChanged="@(status => StatusChanged.InvokeAsync(status))"
+               ToStringFunc="@(status => status.ToDisplayString())"
+               Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense">
+        @foreach (var status in FlowStatuses)
+        {
+            <MudSelectItem Value="@status">
+                <div class="repair-select-item">
+                    <span class="repair-select-dot" style="@status.ToColorStyle()"></span>
+                    @status.ToDisplayString()
+                </div>
+            </MudSelectItem>
+        }
+    </MudSelect>
 </div>
 
 @code {
