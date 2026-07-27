@@ -66,3 +66,34 @@ h1:focus {
 .repair-log-timeline .mud-timeline-item-divider {
     padding-top: 4px;
 }
+
+/* Shown while the WASM runtime and app assemblies download; removed via JS once the first
+   interactive component (MainLayout) renders. Plain CSS/no MudBlazor, since MudBlazor's JS
+   hasn't initialized yet at this point. */
+#app-loading {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    background: #1a1a27;
+    color: #ffffff;
+}
+
+.app-loading-spinner {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 4px solid rgba(255, 255, 255, 0.2);
+    border-top-color: #594ae2;
+    animation: app-loading-spin 0.8s linear infinite;
+}
+
+@keyframes app-loading-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

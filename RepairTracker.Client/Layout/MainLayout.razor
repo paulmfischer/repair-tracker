@@ -1,5 +1,6 @@
 @using System.Reflection
 @inherits LayoutComponentBase
+@inject IJSRuntime JS
 
 <MudProviders />
 
@@ -50,6 +51,14 @@
         if (!string.IsNullOrWhiteSpace(commit))
         {
             _versionLabel = commit.Length > 7 ? commit[..7] : commit;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("hideAppLoadingScreen");
         }
     }
 }
