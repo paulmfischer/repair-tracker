@@ -46,22 +46,10 @@ else
                 <CellTemplate>
                     <MudStack Spacing="0">
                         <MudText>@context.Item.Name</MudText>
-                        @if (!string.IsNullOrWhiteSpace(context.Item.SerialNumber) || !string.IsNullOrWhiteSpace(context.Item.OriginalFault))
+                        @{ var subtitle = ItemSubtitle(context.Item); }
+                        @if (!string.IsNullOrEmpty(subtitle))
                         {
-                            <MudText Typo="Typo.caption" Class="mud-text-secondary">
-                                @if (!string.IsNullOrWhiteSpace(context.Item.SerialNumber))
-                                {
-                                    <span>S/N: @context.Item.SerialNumber</span>
-                                }
-                                @if (!string.IsNullOrWhiteSpace(context.Item.SerialNumber) && !string.IsNullOrWhiteSpace(context.Item.OriginalFault))
-                                {
-                                    <span> &middot; </span>
-                                }
-                                @if (!string.IsNullOrWhiteSpace(context.Item.OriginalFault))
-                                {
-                                    @context.Item.OriginalFault
-                                }
-                            </MudText>
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">@subtitle</MudText>
                         }
                     </MudStack>
                 </CellTemplate>
@@ -139,6 +127,17 @@ else
     private decimal _feePercent;
     private string _search = string.Empty;
     private RepairStatus? _statusFilter;
+
+    private static string ItemSubtitle(Item item)
+    {
+        var parts = new[]
+        {
+            string.IsNullOrWhiteSpace(item.SerialNumber) ? null : $"S/N: {item.SerialNumber}",
+            string.IsNullOrWhiteSpace(item.BoardVersion) ? null : $"Board: {item.BoardVersion}",
+            string.IsNullOrWhiteSpace(item.OriginalFault) ? null : item.OriginalFault,
+        };
+        return string.Join(" · ", parts.Where(p => p is not null));
+    }
 
     private IEnumerable<Item> FilteredItems => _items
         .Where(i => string.IsNullOrWhiteSpace(_search) ||

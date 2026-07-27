@@ -38,6 +38,7 @@ else if (_item is not null)
                 <MudExpansionPanel Text="Item Information" @bind-Expanded="_infoExpanded">
                     <MudTextField @bind-Value="_item.Name" Label="Item Name" Required="true" Class="mb-3" />
                     <MudTextField @bind-Value="_item.SerialNumber" Label="Serial Number (optional)" Class="mb-3" />
+                    <MudTextField @bind-Value="_item.BoardVersion" Label="Board Version (optional)" Class="mb-3" />
                     <MudSelect @bind-Value="_item.Source" Label="Source" Class="mb-3">
                         @foreach (var src in Enum.GetValues<ItemSource>())
                         {
