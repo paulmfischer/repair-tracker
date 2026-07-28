@@ -1,0 +1,168 @@
+@page "/items"
+@inject IItemService ItemService
+@inject ISettingsService SettingsService
+@inject NavigationManager Nav
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Items</PageTitle>
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h5">Items</MudText>
+    <MudSpacer />
+    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add"
+               Href="/items/new">
+        New Item
+    </MudButton>
+</MudStack>
+
+<MudPaper Class="mb-4 pa-3" Elevation="0" Outlined="true">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+        <MudTextField @bind-Value="_search" Label="Search" Placeholder="Search by name..." Clearable="true"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                      Immediate="true" />
+        <MudSelect T="RepairStatus?" @bind-Value="_statusFilter" Label="Status" Clearable="true">
+            @foreach (var status in Enum.GetValues<RepairStatus>())
+            {
+                <MudSelectItem T="RepairStatus?" Value="status">@status.ToDisplayString()</MudSelectItem>
+            }
+        </MudSelect>
+    </MudStack>
+</MudPaper>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudDataGrid T="Item" Items="FilteredItems" Hover="true" Dense="true"
+                 RowClick='e => Nav.NavigateTo($"/items/{e.Item.Id}")'
+                 Style="cursor:pointer">
+        <Columns>
+            <TemplateColumn Title="Item">
+                <CellTemplate>
+                    <MudStack Spacing="0">
+                        <MudText>@context.Item.Name</MudText>
+                        @{ var subtitle = ItemSubtitle(context.Item); }
+                        @if (!string.IsNullOrEmpty(subtitle))
+                        {
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">@subtitle</MudText>
+                        }
+                    </MudStack>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Purchased" SortBy="x => x.CreatedAt">
+                <CellTemplate>
+                    @context.Item.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Source">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small">@context.Item.Source.ToDisplayString()</MudChip>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Status">
+                <CellTemplate>
+                    <MudChip T="string" Size="Size.Small" Color="@context.Item.Status.ToColor()"
+                             Style="@context.Item.Status.ToColorStyle()">
+                        @context.Item.Status.ToDisplayString()
+                    </MudChip>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Cost">
+                <CellTemplate>$@context.Item.Cost.ToString("F2")</CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Est. Profit">
+                <CellTemplate>
+                    <span style="color:@(context.Item.EstimatedProfit(_feePercent).ProfitColor())">
+                        $@context.Item.EstimatedProfit(_feePercent).ToString("F2")
+                    </span>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Net Profit">
+                <CellTemplate>
+                    @if (context.Item.ActualSellPrice > 0)
+                    {
+                        <span style="color:@(context.Item.NetProfit.ProfitColor())">
+                            $@context.Item.NetProfit.ToString("F2")
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="mud-text-secondary">—</span>
+                    }
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="Hours">
+                <CellTemplate>
+                    @if (context.Item.HoursWorked > 0)
+                    {
+                        @context.Item.HoursWorked.ToString("F1")
+                    }
+                    else
+                    {
+                        <span class="mud-text-secondary">—</span>
+                    }
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn Title="" Sortable="false">
+                <CellTemplate>
+                    <div @onclick:stopPropagation="true">
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                                       Color="Color.Error"
+                                       OnClick="() => DeleteItem(context.Item)" />
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </MudDataGrid>
+}
+
+@code {
+    private List<Item> _items = [];
+    private bool _loading = true;
+    private decimal _feePercent;
+    private string _search = string.Empty;
+    private RepairStatus? _statusFilter;
+
+    private static string ItemSubtitle(Item item)
+    {
+        var parts = new[]
+        {
+            string.IsNullOrWhiteSpace(item.SerialNumber) ? null : $"S/N: {item.SerialNumber}",
+            string.IsNullOrWhiteSpace(item.BoardVersion) ? null : $"Board: {item.BoardVersion}",
+            string.IsNullOrWhiteSpace(item.OriginalFault) ? null : item.OriginalFault,
+        };
+        return string.Join(" · ", parts.Where(p => p is not null));
+    }
+
+    private IEnumerable<Item> FilteredItems => _items
+        .Where(i => string.IsNullOrWhiteSpace(_search) ||
+                    i.Name.Contains(_search, StringComparison.OrdinalIgnoreCase))
+        .Where(i => _statusFilter is null || i.Status == _statusFilter);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var settings = await SettingsService.GetAsync();
+        _feePercent = settings.ResellerFeePercentage;
+        _items = await ItemService.GetAllAsync();
+        _loading = false;
+    }
+
+    private async Task DeleteItem(Item item)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Confirm Delete",
+            $"Delete \"{item.Name}\"? This cannot be undone.",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            await ItemService.DeleteAsync(item.Id);
+            _items.Remove(item);
+            Snackbar.Add("Item deleted", Severity.Info);
+        }
+    }
+}

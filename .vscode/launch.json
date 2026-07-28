@@ -1,0 +1,35 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Blazor WebAssembly Debug (client + server)",
+            "type": "blazorwasm",
+            "request": "launch",
+            "hosted": true,
+            "program": "${workspaceFolder}/RepairTracker.Server/bin/Debug/net10.0/RepairTracker.Server.dll",
+            "cwd": "${workspaceFolder}/RepairTracker.Server",
+            "webRoot": "${workspaceFolder}/RepairTracker.Client",
+            "url": "http://localhost:5086",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "preLaunchTask": "build"
+        },
+        {
+            "name": ".NET Server Only",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/RepairTracker.Server/bin/Debug/net10.0/RepairTracker.Server.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/RepairTracker.Server",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            },
+            "preLaunchTask": "build"
+        }
+    ]
+}

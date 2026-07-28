@@ -1,0 +1,24 @@
+
+<MudThemeProvider IsDarkMode="true" Theme="_theme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+@code {
+    // Secondary is recolored away from MudBlazor's default pink/magenta. Status colors are
+    // handled separately via explicit MudBlazor.Colors swatches (see EnumExtensions), not
+    // through theme palette slots, so they don't need an entry here.
+    private readonly MudTheme _theme = new()
+    {
+        PaletteDark = new PaletteDark
+        {
+            Secondary = "#4DD0E1",
+            SecondaryContrastText = "#000000"
+        },
+        PaletteLight = new PaletteLight
+        {
+            Secondary = "#4DD0E1",
+            SecondaryContrastText = "#000000"
+        }
+    };
+}

@@ -1,0 +1,263 @@
+@page "/items/new"
+@page "/items/{Id}"
+@inject IItemService ItemService
+@inject ISettingsService SettingsService
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<PageTitle>@(_isNew ? "New Item" : _item?.Name ?? "Item")</PageTitle>
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Href="/items" />
+    <MudText Typo="Typo.h5">@(_isNew ? "New Item" : _item?.Name)</MudText>
+</MudStack>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (_item is not null)
+{
+    <MudGrid>
+        <MudItem xs="12">
+            @if (_item.Status == RepairStatus.Parts)
+            {
+                <MudAlert Severity="Severity.Normal" Variant="Variant.Outlined" Class="mb-2" Style="@RepairStatus.Parts.ToOutlinedColorStyle()">
+                    This item has been converted to Parts inventory and is no longer moving through the repair flow.
+                </MudAlert>
+            }
+            else
+            {
+                <RepairStepper Status="_item.Status" StatusChanged="SelectStatus" Class="mb-2" />
+            }
+        </MudItem>
+
+        <MudItem xs="12" md="4">
+            <MudExpansionPanels MultiExpansion="true">
+                <MudExpansionPanel Text="Item Information" @bind-Expanded="_infoExpanded">
+                    <MudTextField @bind-Value="_item.Name" Label="Item Name" Required="true" Class="mb-3" />
+                    <MudTextField @bind-Value="_item.SerialNumber" Label="Serial Number (optional)" Class="mb-3" />
+                    <MudTextField @bind-Value="_item.BoardVersion" Label="Board Version (optional)" Class="mb-3" />
+                    <MudSelect @bind-Value="_item.Source" Label="Source" Class="mb-3">
+                        @foreach (var src in Enum.GetValues<ItemSource>())
+                        {
+                            <MudSelectItem Value="src">@src.ToDisplayString()</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudTextField @bind-Value="_item.PurchaseListingId" Label="Purchase Listing ID" Class="mb-3" />
+                    <MudTextField @bind-Value="_item.SaleListingId" Label="Sale Listing ID" Class="mb-3" />
+                    <MudTextField @bind-Value="_item.GeneralNotes" Label="Notes" Lines="3" Class="mb-3" />
+                    <MudTextField @bind-Value="_item.OriginalFault" Label="Original Fault"
+                                  Lines="3" />
+                </MudExpansionPanel>
+
+                <MudExpansionPanel Text="Financials" @bind-Expanded="_financialsExpanded">
+                    <MudNumericField @bind-Value="_item.Cost" Label="Purchase Cost"
+                                     Adornment="Adornment.Start" AdornmentText="$"
+                                     Min="0m" Format="F2" Class="mb-3" />
+                    <MudNumericField @bind-Value="_item.Parts" Label="Parts Cost"
+                                     Adornment="Adornment.Start" AdornmentText="$"
+                                     Min="0m" Format="F2" Class="mb-3" />
+                    <MudNumericField @bind-Value="_item.EstimatedSellPrice" Label="Estimated Sell Price"
+                                     Adornment="Adornment.Start" AdornmentText="$"
+                                     Min="0m" Format="F2" Class="mb-3" />
+
+                    <MudDivider Class="my-3" />
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">Estimated (using @_feePercent% fee)</MudText>
+                    <MudSimpleTable Dense="true" Class="mb-4">
+                        <tbody>
+                            <tr>
+                                <td>Reseller Fee</td>
+                                <td>$@_item.ResellerFee(_feePercent).ToString("F2")</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Est. Profit</strong></td>
+                                <td style="color:@(_item.EstimatedProfit(_feePercent).ProfitColor())">
+                                    <strong>$@_item.EstimatedProfit(_feePercent).ToString("F2")</strong>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </MudSimpleTable>
+
+                    <MudDivider Class="my-3" />
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">Actual</MudText>
+                    <MudNumericField @bind-Value="_item.ActualSellPrice"
+                                     Label="Actual Sell Price (after fees)"
+                                     Adornment="Adornment.Start" AdornmentText="$"
+                                     Min="0m" Format="F2" Class="mb-3" />
+                    <MudNumericField @bind-Value="_item.Postage" Label="Postage"
+                                     Adornment="Adornment.Start" AdornmentText="$"
+                                     Min="0m" Format="F2" Class="mb-3" />
+                    <MudNumericField @bind-Value="_item.HoursWorked" Label="Hours Worked"
+                                     Min="0m" Format="F1" Class="mb-3" />
+
+                    @if (_item.ActualSellPrice > 0)
+                    {
+                        <MudSimpleTable Dense="true">
+                            <tbody>
+                                <tr>
+                                    <td><strong>Net Profit</strong></td>
+                                    <td style="color:@(_item.NetProfit.ProfitColor())">
+                                        <strong>$@_item.NetProfit.ToString("F2")</strong>
+                                    </td>
+                                </tr>
+                                @if (_item.HourlyProfit.HasValue)
+                                {
+                                    <tr>
+                                        <td>Hourly Rate</td>
+                                        <td>$@_item.HourlyProfit!.Value.ToString("F2")/hr</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    }
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        </MudItem>
+
+        <MudItem xs="12" md="8">
+            <RepairLog @ref="_repairLog" Item="_item" IsNew="_isNew" />
+        </MudItem>
+    </MudGrid>
+
+    <MudStack Row="true" Class="mt-4" Spacing="2">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   OnClick="Save" Disabled="_saving">
+            @if (_saving)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            @(_isNew ? "Create Item" : "Save Changes")
+        </MudButton>
+        <MudButton Variant="Variant.Outlined" Href="/items">
+            Cancel
+        </MudButton>
+        @if (!_isNew && _item.Status != RepairStatus.Parts && _item.Status is not (RepairStatus.Intake or RepairStatus.Sold))
+        {
+            <MudButton Variant="Variant.Outlined" Style="@RepairStatus.Parts.ToOutlinedColorStyle()" OnClick="MarkAsParts">
+                Mark as Parts
+            </MudButton>
+        }
+        @if (!_isNew && _item.Status == RepairStatus.Parts)
+        {
+            <MudButton Variant="Variant.Outlined" OnClick="ReturnToRepairFlow">
+                Return to Repair Flow
+            </MudButton>
+        }
+        @if (!_isNew && _item.Status != RepairStatus.Intake)
+        {
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Print"
+                       Href="@($"/items/{_item.Id}/report.pdf")" Target="_blank">
+                Print Report
+            </MudButton>
+        }
+    </MudStack>
+}
+
+@code {
+    [Parameter] public string? Id { get; set; }
+    [SupplyParameterFromQuery] public decimal Cost { get; set; }
+    [SupplyParameterFromQuery] public decimal Parts { get; set; }
+    [SupplyParameterFromQuery] public decimal EstimatedSellPrice { get; set; }
+
+    private Item? _item;
+    private bool _loading = true;
+    private bool _saving;
+    private bool _isNew;
+    private decimal _feePercent;
+    private bool _infoExpanded;
+    private bool _financialsExpanded;
+
+    // The stepper is non-linear — clicking any step jumps straight to its status.
+    private void SelectStatus(RepairStatus status)
+    {
+        if (_item is null || _item.Status == RepairStatus.Parts) return;
+        _item.Status = status;
+        SetDefaultPanelExpansion();
+    }
+
+    private async Task MarkAsParts()
+    {
+        if (_item is null) return;
+        _item.Status = RepairStatus.Parts;
+        SetDefaultPanelExpansion();
+        await Save();
+        StateHasChanged();
+    }
+
+    private async Task ReturnToRepairFlow()
+    {
+        if (_item is null) return;
+        _item.Status = RepairStatus.Diagnosis;
+        SetDefaultPanelExpansion();
+        await Save();
+        StateHasChanged();
+    }
+
+    private RepairLog? _repairLog;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var settings = await SettingsService.GetAsync();
+        _feePercent = settings.ResellerFeePercentage;
+
+        if (string.IsNullOrEmpty(Id))
+        {
+            _isNew = true;
+            _item = new Item
+            {
+                Cost = Cost,
+                Parts = Parts,
+                EstimatedSellPrice = EstimatedSellPrice
+            };
+        }
+        else
+        {
+            _item = await ItemService.GetByIdAsync(Id);
+        }
+
+        SetDefaultPanelExpansion();
+
+        _loading = false;
+    }
+
+    private void SetDefaultPanelExpansion()
+    {
+        if (_item is null) return;
+
+        (_infoExpanded, _financialsExpanded) = _isNew ? (true, true) : _item.Status switch
+        {
+            RepairStatus.Intake => (true, false),
+            RepairStatus.Listed or RepairStatus.Sold => (true, true),
+            RepairStatus.Parts => (true, false),
+            _ => (false, false)
+        };
+    }
+
+    private async Task Save()
+    {
+        if (_item is null) return;
+        _saving = true;
+
+        if (_isNew)
+        {
+            var note = _repairLog is not null ? await _repairLog.BuildDraftNoteAsync() : null;
+            if (note is not null)
+            {
+                _item.Notes.Add(note);
+            }
+
+            await ItemService.CreateAsync(_item);
+            Snackbar.Add("Item created", Severity.Success);
+            Nav.NavigateTo($"/items/{_item.Id}");
+            _isNew = false;
+        }
+        else
+        {
+            await ItemService.UpdateAsync(_item);
+            Snackbar.Add("Saved", Severity.Success);
+        }
+
+        _saving = false;
+    }
+}
