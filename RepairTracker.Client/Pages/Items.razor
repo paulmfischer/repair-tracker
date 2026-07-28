@@ -53,9 +53,9 @@ else
                     </MudStack>
                 </CellTemplate>
             </TemplateColumn>
-            <TemplateColumn Title="Purchased" SortBy="x => x.CreatedAt">
+            <TemplateColumn Title="Last Modified" SortBy="x => x.UpdatedAt">
                 <CellTemplate>
-                    @context.Item.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")
+                    @context.Item.UpdatedAt.ToLocalTime().ToString("MMM d, yyyy")
                 </CellTemplate>
             </TemplateColumn>
             <TemplateColumn Title="Source">

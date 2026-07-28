@@ -31,6 +31,8 @@ public class Item
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? PurchaseDate { get; set; }
+    public DateTime? SoldDate { get; set; }
 
     public decimal ResellerFee(decimal feePercent) =>
         Math.Round(EstimatedSellPrice * (feePercent / 100m), 2);
