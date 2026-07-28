@@ -45,7 +45,9 @@ else if (_item is not null)
                         }
                     </MudSelect>
                     <MudTextField @bind-Value="_item.PurchaseListingId" Label="Purchase Listing ID" Class="mb-3" />
+                    <MudDatePicker @bind-Date="_item.PurchaseDate" Label="Purchase Date" Class="mb-3" />
                     <MudTextField @bind-Value="_item.SaleListingId" Label="Sale Listing ID" Class="mb-3" />
+                    <MudDatePicker @bind-Date="_item.SoldDate" Label="Sold Date" Class="mb-3" />
                     <MudTextField @bind-Value="_item.GeneralNotes" Label="Notes" Lines="3" Class="mb-3" />
                     <MudTextField @bind-Value="_item.OriginalFault" Label="Original Fault"
                                   Lines="3" />

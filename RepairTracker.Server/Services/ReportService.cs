@@ -36,6 +36,14 @@ public class ReportService(IItemService itemService, IWebHostEnvironment env, IC
                         column.Item().Text($"Board Version: {item.BoardVersion}").FontSize(10);
                     }
                     column.Item().Text($"Generated on {DateTime.Now:MMM d, yyyy h:mm tt}").FontSize(9).FontColor(Colors.Grey.Darken1);
+                    if (item.PurchaseDate.HasValue)
+                    {
+                        column.Item().Text($"Purchase Date: {item.PurchaseDate.Value:MMM d, yyyy}").FontSize(9).FontColor(Colors.Grey.Darken1);
+                    }
+                    if (item.SoldDate.HasValue)
+                    {
+                        column.Item().Text($"Sold Date: {item.SoldDate.Value:MMM d, yyyy}").FontSize(9).FontColor(Colors.Grey.Darken1);
+                    }
                     column.Item().PaddingTop(5).LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
                 });
 
