@@ -35,29 +35,29 @@
 
     private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
 
-    protected override void OnInitialized()
-    {
-        var commit = Environment.GetEnvironmentVariable("GIT_COMMIT");
-
-        if (string.IsNullOrWhiteSpace(commit) || commit == "unknown")
-        {
-            // Set at build time via RepairTracker.csproj's SetSourceRevisionIdFromGit target,
-            // so `dotnet run` locally still shows the commit the running build was compiled from.
-            commit = Assembly.GetExecutingAssembly()
-                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
-                .InformationalVersion.Split('+').ElementAtOrDefault(1);
-        }
-
-        if (!string.IsNullOrWhiteSpace(commit))
-        {
-            _versionLabel = commit.Length > 7 ? commit[..7] : commit;
-        }
-    }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            // The server bakes GIT_COMMIT into a <meta> tag on the host page, since the
+            // Docker image's env var lives on the server process, not the browser running this WASM code.
+            var commit = await JS.InvokeAsync<string>("getGitCommitMetaTag");
+
+            if (string.IsNullOrWhiteSpace(commit) || commit == "unknown")
+            {
+                // Set at build time via RepairTracker.Client.csproj's SetSourceRevisionIdFromGit target,
+                // so `dotnet run` locally still shows the commit the running build was compiled from.
+                commit = Assembly.GetExecutingAssembly()
+                    .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+                    .InformationalVersion.Split('+').ElementAtOrDefault(1);
+            }
+
+            if (!string.IsNullOrWhiteSpace(commit))
+            {
+                _versionLabel = commit.Length > 7 ? commit[..7] : commit;
+                StateHasChanged();
+            }
+
             await JS.InvokeVoidAsync("hideAppLoadingScreen");
         }
     }
