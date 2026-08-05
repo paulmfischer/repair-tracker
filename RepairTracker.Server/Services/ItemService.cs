@@ -1,3 +1,4 @@
+using MongoDB.Bson;
 using MongoDB.Driver;
 using RepairTracker.Data;
 using RepairTracker.Models;
@@ -46,5 +47,26 @@ public class ItemService : IItemService
             TotalHoursWorked: items.Sum(i => i.HoursWorked),
             StatusCounts: statusCounts
         );
+    }
+
+    // Matches items with at least one note whose ImagePaths/ThumbnailPaths counts differ,
+    // so a re-run only touches notes that still need thumbnails generated or backfilled.
+    public async Task<List<Item>> GetItemsNeedingThumbnailsAsync()
+    {
+        var filter = new BsonDocument("$expr", new BsonDocument("$anyElementTrue",
+            new BsonDocument("$map", new BsonDocument
+            {
+                { "input", "$Notes" },
+                { "as", "n" },
+                { "in", new BsonDocument("$ne", new BsonArray
+                    {
+                        new BsonDocument("$size", new BsonDocument("$ifNull", new BsonArray { "$$n.ImagePaths", new BsonArray() })),
+                        new BsonDocument("$size", new BsonDocument("$ifNull", new BsonArray { "$$n.ThumbnailPaths", new BsonArray() }))
+                    })
+                }
+            })
+        ));
+
+        return await _db.Items.Find(filter).ToListAsync();
     }
 }

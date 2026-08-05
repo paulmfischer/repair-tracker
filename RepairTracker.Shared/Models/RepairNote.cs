@@ -12,5 +12,6 @@ public class RepairNote
     public string Text { get; set; } = string.Empty;
     public RepairStatus StatusAtTime { get; set; }
     public List<string> ImagePaths { get; set; } = new();
+    public List<string> ThumbnailPaths { get; set; } = new();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
