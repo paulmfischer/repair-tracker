@@ -73,14 +73,15 @@
                                     @if (_editImagePaths.Count > 0)
                                     {
                                         <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
-                                            @foreach (var path in _editImagePaths)
+                                            @for (var i = 0; i < _editImagePaths.Count; i++)
                                             {
+                                                var index = i;
                                                 <div style="position:relative;">
-                                                    <img src="/@path" alt="Note image"
+                                                    <img src="/@EditThumbSrc(index)" alt="Note image"
                                                          style="height:80px;width:80px;object-fit:cover;border-radius:4px;" />
                                                     <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small"
                                                                    Color="Color.Error" Variant="Variant.Filled"
-                                                                   OnClick="@(() => RemoveEditImage(path))"
+                                                                   OnClick="@(() => RemoveEditImage(index))"
                                                                    Style="position:absolute;top:-10px;right:-10px;" />
                                                 </div>
                                             }
@@ -139,10 +140,11 @@
                                     @if (note.ImagePaths.Any())
                                     {
                                         <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mt-1">
-                                            @foreach (var path in note.ImagePaths)
+                                            @for (var i = 0; i < note.ImagePaths.Count; i++)
                                             {
-                                                <a href="/@path" target="_blank">
-                                                    <img src="/@path" alt="Note image"
+                                                var index = i;
+                                                <a href="/@note.ImagePaths[index]" target="_blank">
+                                                    <img src="/@ThumbSrc(note, index)" alt="Note image"
                                                          style="height:80px;width:80px;object-fit:cover;border-radius:4px;cursor:pointer;" />
                                                 </a>
                                             }
@@ -173,9 +175,20 @@
     private string? _editingNoteId;
     private string _editNoteText = string.Empty;
     private List<string> _editImagePaths = new();
+    private List<string> _editThumbnailPaths = new();
     private List<string> _editRemovedImagePaths = new();
     private List<IBrowserFile> _editNewFiles = new();
     private bool _savingEdit;
+
+    private static string ThumbSrc(RepairNote note, int index) =>
+        index < note.ThumbnailPaths.Count && !string.IsNullOrEmpty(note.ThumbnailPaths[index])
+            ? note.ThumbnailPaths[index]
+            : note.ImagePaths[index];
+
+    private string EditThumbSrc(int index) =>
+        index < _editThumbnailPaths.Count && !string.IsNullOrEmpty(_editThumbnailPaths[index])
+            ? _editThumbnailPaths[index]
+            : _editImagePaths[index];
 
     private void OnNewNoteFilesChanged(IReadOnlyList<IBrowserFile> files)
     {
@@ -198,8 +211,9 @@
 
         var response = await Http.PostAsync($"api/items/{Item.Id}/notes/{note.Id}/images", content);
         response.EnsureSuccessStatusCode();
-        var paths = await response.Content.ReadFromJsonAsync<List<string>>() ?? [];
-        note.ImagePaths.AddRange(paths);
+        var result = await response.Content.ReadFromJsonAsync<ImageUploadResult>();
+        note.ImagePaths.AddRange(result?.ImagePaths ?? []);
+        note.ThumbnailPaths.AddRange(result?.ThumbnailPaths ?? []);
     }
 
     private async Task DeleteNoteImageAsync(string imagePath)
@@ -250,6 +264,7 @@
         _editingNoteId = note.Id;
         _editNoteText = note.Text;
         _editImagePaths = new List<string>(note.ImagePaths);
+        _editThumbnailPaths = new List<string>(note.ThumbnailPaths);
         _editRemovedImagePaths = new();
         _editNewFiles = new();
     }
@@ -259,14 +274,19 @@
         _editingNoteId = null;
         _editNoteText = string.Empty;
         _editImagePaths = new();
+        _editThumbnailPaths = new();
         _editRemovedImagePaths = new();
         _editNewFiles = new();
     }
 
-    private void RemoveEditImage(string path)
+    private void RemoveEditImage(int index)
     {
-        _editImagePaths.Remove(path);
-        _editRemovedImagePaths.Add(path);
+        _editRemovedImagePaths.Add(_editImagePaths[index]);
+        _editImagePaths.RemoveAt(index);
+        if (index < _editThumbnailPaths.Count)
+        {
+            _editThumbnailPaths.RemoveAt(index);
+        }
     }
 
     private void OnEditNoteFilesChanged(IReadOnlyList<IBrowserFile> files)
@@ -285,6 +305,7 @@
 
         note.Text = _editNoteText.Trim();
         note.ImagePaths = _editImagePaths;
+        note.ThumbnailPaths = _editThumbnailPaths;
 
         if (_editNewFiles.Count > 0)
         {
