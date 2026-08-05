@@ -1,0 +1,16 @@
+<MudDialog>
+    <DialogContent>
+        <img src="/@ImagePath" alt="Note image" style="max-width:100%;max-height:85vh;display:block;margin:0 auto;object-fit:contain;" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton Href="@("/" + ImagePath)" Target="_blank" StartIcon="@Icons.Material.Filled.OpenInNew">
+            Open in New Tab
+        </MudButton>
+        <MudButton OnClick="@(() => MudDialog.Close())">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter, EditorRequired] public string ImagePath { get; set; } = string.Empty;
+}
