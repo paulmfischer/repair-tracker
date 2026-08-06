@@ -63,4 +63,9 @@ app.MapSettingsEndpoints();
 app.MapImagesEndpoints();
 app.MapReportEndpoints();
 
+// Cheap, DB-free reachability probe: DevTools' offline emulation doesn't reliably flip
+// navigator.onLine (only real hardware disconnects reliably do), so ConnectivityService uses
+// an actual round trip to this endpoint to determine connectivity instead.
+app.MapGet("/api/ping", () => Results.Ok());
+
 app.Run();

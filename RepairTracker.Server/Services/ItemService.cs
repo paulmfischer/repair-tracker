@@ -21,7 +21,9 @@ public class ItemService : IItemService
     {
         item.CreatedAt = DateTime.UtcNow;
         item.UpdatedAt = DateTime.UtcNow;
-        await _db.Items.InsertOneAsync(item);
+        // Upsert rather than insert so a replayed offline-outbox create (same client-minted Id) is
+        // idempotent instead of throwing a duplicate-key error if it somehow gets sent twice.
+        await _db.Items.ReplaceOneAsync(i => i.Id == item.Id, item, new ReplaceOptions { IsUpsert = true });
     }
 
     public async Task UpdateAsync(Item item)
