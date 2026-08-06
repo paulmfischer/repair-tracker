@@ -8,9 +8,9 @@ Repair Tracker is a personal single-user web app for tracking broken electronics
 
 ## Tech Stack
 
-- **.NET 10 Blazor Web App** — Interactive Server rendering (`@rendermode InteractiveServer` on every page)
+- **.NET 10 Blazor Web App** — hybrid render model: `RepairTracker.Server` server-renders the host page and exposes HTTP endpoints; `RepairTracker.Client` is a `Microsoft.NET.Sdk.BlazorWebAssembly` project that boots in the browser with `AddInteractiveWebAssemblyRenderMode()` (`prerender: false`) and owns all client-side routing/navigation after boot
 - **MudBlazor 8.8.0** — all UI components come from MudBlazor; do not mix in raw HTML or other component libraries
-- **MongoDB.Driver 3.4.0** — `IMongoCollection<T>` directly; no ORM or repository abstraction beyond `MongoDbContext`
+- **MongoDB.Driver 3.10.0** — `IMongoCollection<T>` directly; no ORM or repository abstraction beyond `MongoDbContext`. Only `RepairTracker.Server` touches MongoDB — the WASM client never does
 
 ## Commands
 
@@ -19,38 +19,59 @@ Repair Tracker is a personal single-user web app for tracking broken electronics
 podman compose up -d
 
 # Run the app
-dotnet run --project RepairTracker/RepairTracker.csproj
+dotnet run --project RepairTracker.Server/RepairTracker.Server.csproj
 
 # Build without running
-dotnet build RepairTracker/RepairTracker.csproj
+dotnet build RepairTracker.Server/RepairTracker.Server.csproj
 
 # Restore packages
-dotnet restore RepairTracker/RepairTracker.csproj
+dotnet restore RepairTracker.Server/RepairTracker.Server.csproj
 ```
 
 There are no tests in this project.
 
 ## Architecture
 
+Three projects, all targeting `net10.0`:
+
 ```
-RepairTracker/
-├── Program.cs              # DI wiring: MongoDB, MudBlazor, services
+RepairTracker.Shared/                 # Models + service interfaces, referenced by both Client and Server
+├── Models/                           # Plain C# models; computed props marked [BsonIgnore]
+└── Services/Interfaces/              # IItemService, ISettingsService, IReportService
+
+RepairTracker.Client/                 # Microsoft.NET.Sdk.BlazorWebAssembly — runs in the browser
+├── Program.cs                        # DI wiring: MudBlazor, HttpClient, Api*Service implementations
+├── Pages/                            # One .razor per page; @code block inline
+├── Layout/                           # MainLayout (nav drawer + app bar), NavMenu
+├── Shared/                           # Reusable components (RepairLog, RepairStepper, ImagePreviewDialog)
+└── Services/
+    ├── ApiItemService.cs             # IItemService over HTTP — calls RepairTracker.Server's api/items endpoints
+    └── ApiSettingsService.cs         # ISettingsService over HTTP
+
+RepairTracker.Server/                 # Microsoft.NET.Sdk.Web — hosts the app, owns all MongoDB access
+├── Program.cs                        # DI wiring: MongoDB, Razor Components + WASM render mode, endpoints
 ├── Data/
-│   └── MongoDbContext.cs   # Wraps IMongoDatabase; exposes Items and Settings collections
-├── Models/                 # Plain C# models; computed props marked [BsonIgnore]
+│   └── MongoDbContext.cs             # Wraps IMongoDatabase; exposes Items and Settings collections
 ├── Services/
-│   ├── Interfaces/         # IItemService, ISettingsService
-│   ├── ItemService.cs      # CRUD + dashboard aggregation (loads all items into memory)
-│   └── SettingsService.cs  # Upserts single AppSettings document
-└── Components/
-    ├── Layout/             # MainLayout (nav drawer + app bar), NavMenu
-    └── Pages/              # One .razor per page; @code block inline
+│   ├── ItemService.cs                # CRUD + dashboard aggregation (loads all items into memory)
+│   └── SettingsService.cs            # Upserts single AppSettings document
+├── Endpoints/                        # Minimal API endpoints the Client's Api*Service classes call
+│   ├── ItemsEndpoints.cs, SettingsEndpoints.cs, ImagesEndpoints.cs, ReportEndpoints.cs
+├── Components/
+│   └── App.razor                     # The one server-rendered host page; boots the WASM runtime
+└── wwwroot/                          # Static assets: app.css, favicon.png, manifest.json, service-worker.js, js/
 ```
+
+Since the WASM client can't touch the server's filesystem or MongoDB directly, anything requiring either (image uploads, note images, CRUD against Mongo) goes through an HTTP endpoint in `RepairTracker.Server/Endpoints/`, called from a matching `Api*Service` class in `RepairTracker.Client/Services/`.
+
+### Offline support
+
+The app has a service worker (`RepairTracker.Server/wwwroot/service-worker.js`) and web manifest (`RepairTracker.Server/wwwroot/manifest.json`) so it's installable and can reload/launch with no network — it lazily caches static assets and the most recent successful navigation response as it fetches them (no build-time precache list, since there's no static `index.html` to precache in this hybrid render model). `RepairTracker.Client/Services/ConnectivityService.cs` wraps `navigator.onLine`/`online`/`offline` events (via `wwwroot/js/connectivity.js`) and drives the offline banner in `MainLayout.razor`.
 
 ### Data model key points
 
 - `Item` is the core document stored in the `items` collection. Notes are embedded as `List<RepairNote>` (not a separate collection).
-- `RepairNote` stores the status at time of note creation (`StatusAtTime`) plus optional image paths stored on disk under `wwwroot/uploads/{itemId}/{noteId}/`.
+- `RepairNote` stores the status at time of note creation (`StatusAtTime`) plus optional image paths. Images are written to disk under `{itemId}/{noteId}/` inside an uploads root that's deliberately kept outside `wwwroot` (see `RepairTracker.Server/UploadsPath.cs`) so runtime writes don't trigger the dev-time Static Web Assets file watcher.
 - `AppSettings` is a singleton document in the `settings` collection; `SettingsService` upserts it on every save and creates a default on first read.
 - Computed financials (`NetProfit`, `HourlyProfit`, `EstimatedProfit`, `ResellerFee`) live as methods/properties on `Item` — not persisted. `[BsonIgnore]` is needed only on properties, not methods.
 - `ResellerFeePercentage` is read from `AppSettings` at page load and passed into `Item` methods — it is not stored on `Item` itself.

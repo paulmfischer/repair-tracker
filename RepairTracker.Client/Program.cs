@@ -14,5 +14,6 @@ builder.Services.AddScoped(_ => new HttpClient
 
 builder.Services.AddScoped<IItemService, ApiItemService>();
 builder.Services.AddScoped<ISettingsService, ApiSettingsService>();
+builder.Services.AddScoped<ConnectivityService>();
 
 await builder.Build().RunAsync();

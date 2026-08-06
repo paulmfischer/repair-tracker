@@ -1,6 +1,9 @@
 @using System.Reflection
+@using RepairTracker.Client.Services
 @inherits LayoutComponentBase
+@implements IAsyncDisposable
 @inject IJSRuntime JS
+@inject ConnectivityService Connectivity
 
 <MudProviders />
 
@@ -10,6 +13,13 @@
                        OnClick="ToggleDrawer" />
         <MudText Typo="Typo.h6" Class="ml-3">Repair Tracker</MudText>
     </MudAppBar>
+
+    @if (!Connectivity.IsOnline)
+    {
+        <MudAlert Severity="Severity.Warning" Square="true" Dense="true">
+            You're offline — changes will sync automatically when you're back online.
+        </MudAlert>
+    }
 
     <MudDrawer @bind-Open="_drawerOpen" Elevation="2" Class="d-flex flex-column">
         <MudDrawerHeader>
@@ -59,6 +69,20 @@
             }
 
             await JS.InvokeVoidAsync("hideAppLoadingScreen");
+
+            Connectivity.OnlineStatusChanged += OnConnectivityChanged;
+            await Connectivity.InitializeAsync();
+            StateHasChanged();
         }
+    }
+
+    private void OnConnectivityChanged(bool isOnline) => InvokeAsync(StateHasChanged);
+
+    public ValueTask DisposeAsync()
+    {
+        // ConnectivityService itself is a DI-owned scoped service (disposed with the app's
+        // root scope); MainLayout only needs to detach its own event subscription here.
+        Connectivity.OnlineStatusChanged -= OnConnectivityChanged;
+        return ValueTask.CompletedTask;
     }
 }
