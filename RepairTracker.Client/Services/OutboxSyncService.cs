@@ -56,15 +56,21 @@ public class OutboxSyncService(
                 try
                 {
                     await ApplyAsync(operation);
-                    connectivity.ReportOnline();
                     await outbox.RemoveAsync(operation.Id);
                     syncedCount++;
                 }
+                catch (HttpRequestException ex) when (ex.StatusCode is null)
+                {
+                    // Genuine connectivity failure - stop and retry the whole remaining queue in order next time.
+                    break;
+                }
                 catch (HttpRequestException)
                 {
-                    // Still offline or the server rejected it - stop and retry in order next time.
-                    connectivity.ReportOffline();
-                    break;
+                    // The server was reached but rejected this specific change (e.g. a validation
+                    // error) - retrying won't help, so drop it rather than blocking everything
+                    // queued after it, and let the user know it needs to be redone.
+                    await outbox.RemoveAsync(operation.Id);
+                    snackbar.Add("An offline change couldn't be saved and was discarded - please redo it.", Severity.Error);
                 }
             }
 

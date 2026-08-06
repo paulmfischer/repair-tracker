@@ -6,9 +6,10 @@ namespace RepairTracker.Client.Services;
 // actually reach the server - and Chrome DevTools' offline emulation (both the Network
 // throttle preset and the Application panel checkbox) doesn't reliably override it either,
 // especially across a fresh page load. So the source of truth here is real request outcomes:
-// an initial probe on startup, plus CachingItemService/CachingSettingsService/OutboxSyncService
-// reporting every actual success/failure they see. The browser's online/offline events are kept
-// only as a supplementary fast-path signal for real network drops.
+// an initial probe on startup (this class, against /api/ping), plus every other real API call
+// reported by ConnectivityReportingHandler on the HttpClient pipeline (see Program.cs) - nothing
+// else needs its own try/catch just to report connectivity. The browser's online/offline events
+// are kept only as a supplementary fast-path signal for real network drops.
 public class ConnectivityService(IJSRuntime js, HttpClient http) : IAsyncDisposable
 {
     private IJSObjectReference? _module;
@@ -32,6 +33,9 @@ public class ConnectivityService(IJSRuntime js, HttpClient http) : IAsyncDisposa
     {
         try
         {
+            // This client isn't wrapped by ConnectivityReportingHandler (see Program.cs), so the
+            // outcome - including a timeout, which throws TaskCanceledException rather than
+            // HttpRequestException - is reported explicitly here instead.
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
             var response = await http.GetAsync("api/ping", cts.Token);
             SetOnline(response.IsSuccessStatusCode);
