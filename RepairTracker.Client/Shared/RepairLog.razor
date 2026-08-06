@@ -1,7 +1,10 @@
+@using RepairTracker.Client.Services
+@implements IDisposable
 @inject IItemService ItemService
 @inject ISnackbar Snackbar
 @inject HttpClient Http
 @inject IDialogService DialogService
+@inject ConnectivityService Connectivity
 
 <MudCard>
     <MudCardHeader>
@@ -14,14 +17,21 @@
         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-1">
             <MudFileUpload T="IReadOnlyList<IBrowserFile>"
                            FilesChanged="OnNewNoteFilesChanged"
+                           Disabled="@(!Connectivity.IsOnline)"
                            Accept=".jpg,.jpeg,.png,.gif,.webp">
                 <ActivatorContent>
-                    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.AttachFile">
+                    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.AttachFile" Disabled="@(!Connectivity.IsOnline)">
                         Attach Pictures
                     </MudButton>
                 </ActivatorContent>
             </MudFileUpload>
         </MudStack>
+        @if (!Connectivity.IsOnline)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">
+                Reconnect to attach pictures — text notes still work offline.
+            </MudText>
+        }
         @if (_newNoteFiles.Count > 0)
         {
             <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2" Class="mb-1">
@@ -91,13 +101,20 @@
                                     }
                                     <MudFileUpload T="IReadOnlyList<IBrowserFile>"
                                                    FilesChanged="OnEditNoteFilesChanged"
+                                                   Disabled="@(!Connectivity.IsOnline)"
                                                    Accept=".jpg,.jpeg,.png,.gif,.webp">
                                         <ActivatorContent>
-                                            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.AttachFile">
+                                            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.AttachFile" Disabled="@(!Connectivity.IsOnline)">
                                                 Attach Pictures
                                             </MudButton>
                                         </ActivatorContent>
                                     </MudFileUpload>
+                                    @if (!Connectivity.IsOnline)
+                                    {
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                            Reconnect to attach pictures — text notes still work offline.
+                                        </MudText>
+                                    }
                                     @if (_editNewFiles.Count > 0)
                                     {
                                         <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
@@ -168,6 +185,17 @@
 @code {
     [Parameter, EditorRequired] public Item Item { get; set; } = null!;
     [Parameter] public bool IsNew { get; set; }
+
+    protected override void OnInitialized()
+    {
+        // MainLayout's own re-render on connectivity change doesn't reliably cascade down to
+        // this nested component, so it needs its own subscription to pick up the flip live.
+        Connectivity.OnlineStatusChanged += OnConnectivityChanged;
+    }
+
+    private void OnConnectivityChanged(bool isOnline) => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Connectivity.OnlineStatusChanged -= OnConnectivityChanged;
 
     private string _newNoteText = string.Empty;
     private List<IBrowserFile> _newNoteFiles = new();
