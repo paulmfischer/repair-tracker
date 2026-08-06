@@ -12,8 +12,11 @@ builder.Services.AddScoped(_ => new HttpClient
     BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
 });
 
-builder.Services.AddScoped<IItemService, ApiItemService>();
-builder.Services.AddScoped<ISettingsService, ApiSettingsService>();
+builder.Services.AddScoped<ApiItemService>();
+builder.Services.AddScoped<ApiSettingsService>();
+builder.Services.AddScoped<IndexedDbStore>();
+builder.Services.AddScoped<IItemService, CachingItemService>();
+builder.Services.AddScoped<ISettingsService, CachingSettingsService>();
 builder.Services.AddScoped<ConnectivityService>();
 
 await builder.Build().RunAsync();

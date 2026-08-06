@@ -68,6 +68,8 @@ Since the WASM client can't touch the server's filesystem or MongoDB directly, a
 
 The app has a service worker (`RepairTracker.Server/wwwroot/service-worker.js`) and web manifest (`RepairTracker.Server/wwwroot/manifest.json`) so it's installable and can reload/launch with no network — it lazily caches static assets and the most recent successful navigation response as it fetches them (no build-time precache list, since there's no static `index.html` to precache in this hybrid render model). `RepairTracker.Client/Services/ConnectivityService.cs` wraps `navigator.onLine`/`online`/`offline` events (via `wwwroot/js/connectivity.js`) and drives the offline banner in `MainLayout.razor`.
 
+Item and settings data are also cached client-side in IndexedDB (via `wwwroot/js/offlineDb.js` and `RepairTracker.Client/Services/IndexedDbStore.cs`) so they're browsable offline. `CachingItemService`/`CachingSettingsService` implement `IItemService`/`ISettingsService` as decorators around `ApiItemService`/`ApiSettingsService` — try the network, write through to IndexedDB on success, fall back to the cache on failure — and are what `Program.cs` actually registers behind the interfaces; `.razor` pages never talk to `Api*Service` directly. Writes still require the network at this stage (offline writes queue in a later phase); `GetDashboardStatsAsync` falls back to recomputing the aggregation client-side from cached items using the same `Item` extension methods the server uses.
+
 ### Data model key points
 
 - `Item` is the core document stored in the `items` collection. Notes are embedded as `List<RepairNote>` (not a separate collection).
