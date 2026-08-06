@@ -15,8 +15,10 @@ builder.Services.AddScoped(_ => new HttpClient
 builder.Services.AddScoped<ApiItemService>();
 builder.Services.AddScoped<ApiSettingsService>();
 builder.Services.AddScoped<IndexedDbStore>();
+builder.Services.AddScoped<OutboxStore>();
 builder.Services.AddScoped<IItemService, CachingItemService>();
 builder.Services.AddScoped<ISettingsService, CachingSettingsService>();
 builder.Services.AddScoped<ConnectivityService>();
+builder.Services.AddScoped<OutboxSyncService>();
 
 await builder.Build().RunAsync();

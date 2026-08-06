@@ -3,7 +3,7 @@ using RepairTracker.Services;
 
 namespace RepairTracker.Client.Services;
 
-public class CachingItemService(ApiItemService api, IndexedDbStore cache) : IItemService
+public class CachingItemService(ApiItemService api, IndexedDbStore cache, OutboxStore outbox) : IItemService
 {
     private const string StoreName = "items";
 
@@ -41,11 +41,44 @@ public class CachingItemService(ApiItemService api, IndexedDbStore cache) : IIte
         }
     }
 
-    public Task CreateAsync(Item item) => api.CreateAsync(item);
+    public async Task CreateAsync(Item item)
+    {
+        try
+        {
+            await api.CreateAsync(item);
+        }
+        catch (HttpRequestException)
+        {
+            await cache.PutAsync(StoreName, item);
+            await outbox.EnqueueCreateAsync(item);
+        }
+    }
 
-    public Task UpdateAsync(Item item) => api.UpdateAsync(item);
+    public async Task UpdateAsync(Item item)
+    {
+        try
+        {
+            await api.UpdateAsync(item);
+        }
+        catch (HttpRequestException)
+        {
+            await cache.PutAsync(StoreName, item);
+            await outbox.EnqueueUpdateAsync(item);
+        }
+    }
 
-    public Task DeleteAsync(string id) => api.DeleteAsync(id);
+    public async Task DeleteAsync(string id)
+    {
+        try
+        {
+            await api.DeleteAsync(id);
+        }
+        catch (HttpRequestException)
+        {
+            await cache.RemoveAsync(StoreName, id);
+            await outbox.EnqueueDeleteAsync(id);
+        }
+    }
 
     public async Task<DashboardStats> GetDashboardStatsAsync(decimal feePercent)
     {

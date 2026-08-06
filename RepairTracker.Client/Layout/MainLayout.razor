@@ -4,6 +4,7 @@
 @implements IAsyncDisposable
 @inject IJSRuntime JS
 @inject ConnectivityService Connectivity
+@inject OutboxSyncService OutboxSync
 
 <MudProviders />
 
@@ -72,6 +73,7 @@
 
             Connectivity.OnlineStatusChanged += OnConnectivityChanged;
             await Connectivity.InitializeAsync();
+            OutboxSync.Initialize();
             StateHasChanged();
         }
     }
