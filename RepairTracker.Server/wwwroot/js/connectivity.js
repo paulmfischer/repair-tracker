@@ -1,9 +1,8 @@
 let onlineHandler = null;
 let offlineHandler = null;
 
-export function isOnline() {
-    return navigator.onLine;
-}
+// navigator.onLine-driven browser events are only a supplementary signal here (real request
+// outcomes, probed and reported from C#, are the source of truth) - see ConnectivityService.
 
 // Single-subscriber module (MainLayout is the one top-level layout for the whole app),
 // so a module-level handler pair is enough - no need for a registry keyed by caller.

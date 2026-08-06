@@ -3,7 +3,7 @@ using RepairTracker.Services;
 
 namespace RepairTracker.Client.Services;
 
-public class CachingSettingsService(ApiSettingsService api, IndexedDbStore cache, OutboxStore outbox) : ISettingsService
+public class CachingSettingsService(ApiSettingsService api, IndexedDbStore cache, OutboxStore outbox, ConnectivityService connectivity) : ISettingsService
 {
     private const string StoreName = "settings";
 
@@ -12,11 +12,13 @@ public class CachingSettingsService(ApiSettingsService api, IndexedDbStore cache
         try
         {
             var settings = await api.GetAsync();
+            connectivity.ReportOnline();
             await cache.PutAsync(StoreName, settings);
             return settings;
         }
         catch (HttpRequestException)
         {
+            connectivity.ReportOffline();
             var cached = await cache.GetAllAsync<AppSettings>(StoreName);
             return cached.FirstOrDefault() ?? new AppSettings();
         }
@@ -27,10 +29,12 @@ public class CachingSettingsService(ApiSettingsService api, IndexedDbStore cache
         try
         {
             await api.SaveAsync(settings);
+            connectivity.ReportOnline();
             await cache.PutAsync(StoreName, settings);
         }
         catch (HttpRequestException)
         {
+            connectivity.ReportOffline();
             await cache.PutAsync(StoreName, settings);
             await outbox.EnqueueSaveSettingsAsync(settings);
         }

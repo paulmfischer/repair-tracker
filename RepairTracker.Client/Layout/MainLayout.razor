@@ -13,6 +13,14 @@
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
                        OnClick="ToggleDrawer" />
         <MudText Typo="Typo.h6" Class="ml-3">Repair Tracker</MudText>
+        @if (!Connectivity.IsOnline)
+        {
+            <MudTooltip Text="You're offline — changes will sync automatically when you're back online." Class="ml-3">
+                <MudChip T="string" Icon="@Icons.Material.Filled.CloudOff" Color="Color.Warning" Variant="Variant.Filled" Size="Size.Small">
+                    Offline
+                </MudChip>
+            </MudTooltip>
+        }
     </MudAppBar>
 
     <MudDrawer @bind-Open="_drawerOpen" Elevation="2" Class="d-flex flex-column">
@@ -27,12 +35,6 @@
     </MudDrawer>
 
     <MudMainContent>
-        @if (!Connectivity.IsOnline)
-        {
-            <MudAlert Severity="Severity.Warning" Square="true" Dense="true">
-                You're offline — changes will sync automatically when you're back online.
-            </MudAlert>
-        }
         <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-6">
             @Body
         </MudContainer>

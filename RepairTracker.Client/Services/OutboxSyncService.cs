@@ -56,12 +56,14 @@ public class OutboxSyncService(
                 try
                 {
                     await ApplyAsync(operation);
+                    connectivity.ReportOnline();
                     await outbox.RemoveAsync(operation.Id);
                     syncedCount++;
                 }
                 catch (HttpRequestException)
                 {
                     // Still offline or the server rejected it - stop and retry in order next time.
+                    connectivity.ReportOffline();
                     break;
                 }
             }

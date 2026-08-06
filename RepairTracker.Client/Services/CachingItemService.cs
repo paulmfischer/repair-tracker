@@ -3,7 +3,7 @@ using RepairTracker.Services;
 
 namespace RepairTracker.Client.Services;
 
-public class CachingItemService(ApiItemService api, IndexedDbStore cache, OutboxStore outbox) : IItemService
+public class CachingItemService(ApiItemService api, IndexedDbStore cache, OutboxStore outbox, ConnectivityService connectivity) : IItemService
 {
     private const string StoreName = "items";
 
@@ -12,6 +12,7 @@ public class CachingItemService(ApiItemService api, IndexedDbStore cache, Outbox
         try
         {
             var items = await api.GetAllAsync();
+            connectivity.ReportOnline();
             foreach (var item in items)
             {
                 await cache.PutAsync(StoreName, item);
@@ -20,6 +21,7 @@ public class CachingItemService(ApiItemService api, IndexedDbStore cache, Outbox
         }
         catch (HttpRequestException)
         {
+            connectivity.ReportOffline();
             return await cache.GetAllAsync<Item>(StoreName);
         }
     }
@@ -29,6 +31,7 @@ public class CachingItemService(ApiItemService api, IndexedDbStore cache, Outbox
         try
         {
             var item = await api.GetByIdAsync(id);
+            connectivity.ReportOnline();
             if (item is not null)
             {
                 await cache.PutAsync(StoreName, item);
@@ -37,6 +40,7 @@ public class CachingItemService(ApiItemService api, IndexedDbStore cache, Outbox
         }
         catch (HttpRequestException)
         {
+            connectivity.ReportOffline();
             return await cache.GetAsync<Item>(StoreName, id);
         }
     }
@@ -46,9 +50,11 @@ public class CachingItemService(ApiItemService api, IndexedDbStore cache, Outbox
         try
         {
             await api.CreateAsync(item);
+            connectivity.ReportOnline();
         }
         catch (HttpRequestException)
         {
+            connectivity.ReportOffline();
             await cache.PutAsync(StoreName, item);
             await outbox.EnqueueCreateAsync(item);
         }
@@ -59,9 +65,11 @@ public class CachingItemService(ApiItemService api, IndexedDbStore cache, Outbox
         try
         {
             await api.UpdateAsync(item);
+            connectivity.ReportOnline();
         }
         catch (HttpRequestException)
         {
+            connectivity.ReportOffline();
             await cache.PutAsync(StoreName, item);
             await outbox.EnqueueUpdateAsync(item);
         }
@@ -72,9 +80,11 @@ public class CachingItemService(ApiItemService api, IndexedDbStore cache, Outbox
         try
         {
             await api.DeleteAsync(id);
+            connectivity.ReportOnline();
         }
         catch (HttpRequestException)
         {
+            connectivity.ReportOffline();
             await cache.RemoveAsync(StoreName, id);
             await outbox.EnqueueDeleteAsync(id);
         }
@@ -84,10 +94,13 @@ public class CachingItemService(ApiItemService api, IndexedDbStore cache, Outbox
     {
         try
         {
-            return await api.GetDashboardStatsAsync(feePercent);
+            var stats = await api.GetDashboardStatsAsync(feePercent);
+            connectivity.ReportOnline();
+            return stats;
         }
         catch (HttpRequestException)
         {
+            connectivity.ReportOffline();
             var items = await cache.GetAllAsync<Item>(StoreName);
             var statusCounts = Enum.GetValues<RepairStatus>()
                 .ToDictionary(s => s, s => items.Count(i => i.Status == s));
