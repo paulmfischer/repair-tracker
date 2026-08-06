@@ -1,14 +1,11 @@
 // Bump this whenever the caching strategy changes, to drop stale caches on activate.
-const CACHE_NAME = 'repair-tracker-v1';
+const CACHE_NAME = 'repair-tracker-v2';
 
 // There's no static index.html to precache (this is a server-rendered Blazor Web App
 // host page, not a standalone WASM app) - so instead of precaching a fixed asset list,
 // assets are cached lazily as they're actually requested, and the most recent successful
 // navigation response is kept under this fixed key as the offline fallback shell.
 const SHELL_CACHE_KEY = new Request('/offline-shell');
-
-const CACHEABLE_PATH_PREFIXES = ['/_framework/', '/_content/', '/js/', '/icons/'];
-const CACHEABLE_PATHS = ['/app.css', '/favicon.png', '/manifest.json'];
 
 self.addEventListener('install', () => {
     self.skipWaiting();
@@ -38,11 +35,11 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    const isCacheable = CACHEABLE_PATH_PREFIXES.some((prefix) => url.pathname.startsWith(prefix))
-        || CACHEABLE_PATHS.includes(url.pathname);
-    if (isCacheable) {
-        event.respondWith(cacheFirst(request));
-    }
+    // Everything else same-origin (css/js/wasm/images/fonts/manifest/etc.) gets cached as it's
+    // fetched. Blazor fingerprints most static asset filenames per build, so an allowlist of
+    // exact paths goes stale on every rebuild - caching by exclusion (skip /api/ and non-GET)
+    // avoids that entirely.
+    event.respondWith(cacheFirst(request));
 });
 
 async function handleNavigate(request) {
