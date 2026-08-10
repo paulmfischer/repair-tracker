@@ -23,6 +23,7 @@ public class Item
     public List<RepairNote> Notes { get; set; } = new();
 
     public decimal Cost { get; set; }
+    public decimal PurchaseTax { get; set; }
     public decimal Parts { get; set; }
     public decimal PurchaseShipping { get; set; }
     public bool PurchaseShippingPaidByMe { get; set; } = true;
@@ -44,7 +45,7 @@ public class Item
         Math.Round(EstimatedSellPrice * (feePercent / 100m), 2) + perOrderFee;
 
     public decimal EstimatedProfit(decimal feePercent, decimal perOrderFee) =>
-        EstimatedSellPrice - Cost - Parts - (PurchaseShippingPaidByMe ? PurchaseShipping : 0) - ResellerFee(feePercent, perOrderFee);
+        EstimatedSellPrice - Cost - PurchaseTax - Parts - (PurchaseShippingPaidByMe ? PurchaseShipping : 0) - ResellerFee(feePercent, perOrderFee);
 
     // If the buyer paid for postage, that amount was part of what eBay charges its fee on.
     // Sales tax collected from the buyer is also part of the order total eBay charges fees on,
@@ -63,6 +64,7 @@ public class Item
     public decimal NetProfit(decimal feePercent, decimal perOrderFee) =>
         SaleProceeds(feePercent, perOrderFee)
         - Cost
+        - PurchaseTax
         - Parts
         - (PurchaseShippingPaidByMe ? PurchaseShipping : 0);
 
