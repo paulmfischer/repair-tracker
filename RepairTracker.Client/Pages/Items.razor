@@ -76,8 +76,8 @@ else
             </TemplateColumn>
             <TemplateColumn Title="Est. Profit">
                 <CellTemplate>
-                    <span style="color:@(context.Item.EstimatedProfit(_feePercent).ProfitColor())">
-                        $@context.Item.EstimatedProfit(_feePercent).ToString("F2")
+                    <span style="color:@(context.Item.EstimatedProfit(_feePercent, _perOrderFee).ProfitColor())">
+                        $@context.Item.EstimatedProfit(_feePercent, _perOrderFee).ToString("F2")
                     </span>
                 </CellTemplate>
             </TemplateColumn>
@@ -85,8 +85,8 @@ else
                 <CellTemplate>
                     @if (context.Item.ActualSellPrice > 0)
                     {
-                        <span style="color:@(context.Item.NetProfit.ProfitColor())">
-                            $@context.Item.NetProfit.ToString("F2")
+                        <span style="color:@(context.Item.NetProfit(_feePercent, _perOrderFee).ProfitColor())">
+                            $@context.Item.NetProfit(_feePercent, _perOrderFee).ToString("F2")
                         </span>
                     }
                     else
@@ -124,6 +124,7 @@ else
     private List<Item> _items = [];
     private bool _loading = true;
     private decimal _feePercent;
+    private decimal _perOrderFee;
     private string _search = string.Empty;
     private RepairStatus? _statusFilter;
 
@@ -147,6 +148,7 @@ else
     {
         var settings = await SettingsService.GetAsync();
         _feePercent = settings.ResellerFeePercentage;
+        _perOrderFee = settings.PerOrderFee;
         _items = await ItemService.GetAllAsync();
         _loading = false;
     }

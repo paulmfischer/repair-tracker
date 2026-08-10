@@ -24,9 +24,13 @@ public class Item
 
     public decimal Cost { get; set; }
     public decimal Parts { get; set; }
+    public decimal PurchaseShipping { get; set; }
+    public bool PurchaseShippingPaidByMe { get; set; } = true;
     public decimal EstimatedSellPrice { get; set; }
     public decimal ActualSellPrice { get; set; }
+    public bool SellerFeeApplies { get; set; } = true;
     public decimal Postage { get; set; }
+    public bool PostagePaidByMe { get; set; }
     public decimal HoursWorked { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -34,15 +38,30 @@ public class Item
     public DateTime? PurchaseDate { get; set; }
     public DateTime? SoldDate { get; set; }
 
-    public decimal ResellerFee(decimal feePercent) =>
-        Math.Round(EstimatedSellPrice * (feePercent / 100m), 2);
+    // eBay charges a flat per-order fee on top of the percentage fee, so both are folded into one line item.
+    public decimal ResellerFee(decimal feePercent, decimal perOrderFee) =>
+        Math.Round(EstimatedSellPrice * (feePercent / 100m), 2) + perOrderFee;
 
-    public decimal EstimatedProfit(decimal feePercent) =>
-        EstimatedSellPrice - Cost - Parts - ResellerFee(feePercent);
+    public decimal EstimatedProfit(decimal feePercent, decimal perOrderFee) =>
+        EstimatedSellPrice - Cost - Parts - (PurchaseShippingPaidByMe ? PurchaseShipping : 0) - ResellerFee(feePercent, perOrderFee);
 
-    [BsonIgnore]
-    public decimal NetProfit => ActualSellPrice - Cost - Parts - Postage;
+    // If the buyer paid for postage, that amount was part of what eBay charges its fee on.
+    public decimal OrderTotal => ActualSellPrice + (PostagePaidByMe ? 0 : Postage);
 
-    [BsonIgnore]
-    public decimal? HourlyProfit => HoursWorked > 0 ? Math.Round(NetProfit / HoursWorked, 2) : null;
+    public decimal ActualResellerFee(decimal feePercent, decimal perOrderFee) =>
+        SellerFeeApplies ? Math.Round(OrderTotal * (feePercent / 100m), 2) + perOrderFee : 0m;
+
+    // Postage is always an out-of-pocket shipping cost; it only inflates the fee base
+    // when the buyer covered it (via OrderTotal), so it nets out of proceeds either way.
+    public decimal SaleProceeds(decimal feePercent, decimal perOrderFee) =>
+        OrderTotal - ActualResellerFee(feePercent, perOrderFee) - Postage;
+
+    public decimal NetProfit(decimal feePercent, decimal perOrderFee) =>
+        SaleProceeds(feePercent, perOrderFee)
+        - Cost
+        - Parts
+        - (PurchaseShippingPaidByMe ? PurchaseShipping : 0);
+
+    public decimal? HourlyProfit(decimal feePercent, decimal perOrderFee) =>
+        HoursWorked > 0 ? Math.Round(NetProfit(feePercent, perOrderFee) / HoursWorked, 2) : null;
 }

@@ -37,7 +37,7 @@ public class ApiItemService(HttpClient http) : IItemService
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<DashboardStats> GetDashboardStatsAsync(decimal feePercent) =>
-        await http.GetFromJsonAsync<DashboardStats>($"api/items/dashboard-stats?feePercent={feePercent}")
+    public async Task<DashboardStats> GetDashboardStatsAsync(decimal feePercent, decimal perOrderFee) =>
+        await http.GetFromJsonAsync<DashboardStats>($"api/items/dashboard-stats?feePercent={feePercent}&perOrderFee={perOrderFee}")
         ?? new DashboardStats(0, 0, 0, 0, new Dictionary<RepairStatus, int>());
 }

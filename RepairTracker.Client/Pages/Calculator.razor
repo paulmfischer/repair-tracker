@@ -45,7 +45,7 @@ else
                     <MudSimpleTable Dense="true">
                         <tbody>
                             <tr>
-                                <td>Reseller Fee (@_settings.ResellerFeePercentage%)</td>
+                                <td>Reseller Fee (@_settings.ResellerFeePercentage% + $@_settings.PerOrderFee.ToString("F2"))</td>
                                 <td class="text-right">$@_resellerFee.ToString("F2")</td>
                             </tr>
                             <tr>
@@ -84,7 +84,7 @@ else
     private void Recalculate()
     {
         if (_settings is null) return;
-        _resellerFee = Math.Round(_estimatedSellPrice * (_settings.ResellerFeePercentage / 100m), 2);
+        _resellerFee = Math.Round(_estimatedSellPrice * (_settings.ResellerFeePercentage / 100m), 2) + _settings.PerOrderFee;
         _totalCosts = _cost + _parts + _resellerFee;
         _grossProfit = _estimatedSellPrice - _totalCosts;
     }

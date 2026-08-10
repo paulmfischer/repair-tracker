@@ -35,7 +35,7 @@ public class ItemService : IItemService
     public async Task DeleteAsync(string id) =>
         await _db.Items.DeleteOneAsync(i => i.Id == id);
 
-    public async Task<DashboardStats> GetDashboardStatsAsync(decimal feePercent)
+    public async Task<DashboardStats> GetDashboardStatsAsync(decimal feePercent, decimal perOrderFee)
     {
         var items = await GetAllAsync();
 
@@ -43,8 +43,8 @@ public class ItemService : IItemService
             .ToDictionary(s => s, s => items.Count(i => i.Status == s));
 
         return new DashboardStats(
-            TotalEstimatedProfit: items.Sum(i => i.EstimatedProfit(feePercent)),
-            TotalActualProfit: items.Sum(i => i.NetProfit),
+            TotalEstimatedProfit: items.Sum(i => i.EstimatedProfit(feePercent, perOrderFee)),
+            TotalActualProfit: items.Sum(i => i.NetProfit(feePercent, perOrderFee)),
             TotalPostage: items.Sum(i => i.Postage),
             TotalHoursWorked: items.Sum(i => i.HoursWorked),
             StatusCounts: statusCounts

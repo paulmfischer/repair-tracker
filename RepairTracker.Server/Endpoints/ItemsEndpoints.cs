@@ -12,8 +12,8 @@ public static class ItemsEndpoints
         group.MapGet("/", async (IItemService itemService) =>
             Results.Ok(await itemService.GetAllAsync()));
 
-        group.MapGet("/dashboard-stats", async (decimal feePercent, IItemService itemService) =>
-            Results.Ok(await itemService.GetDashboardStatsAsync(feePercent)));
+        group.MapGet("/dashboard-stats", async (decimal feePercent, decimal perOrderFee, IItemService itemService) =>
+            Results.Ok(await itemService.GetDashboardStatsAsync(feePercent, perOrderFee)));
 
         group.MapGet("/{id}", async (string id, IItemService itemService) =>
         {
