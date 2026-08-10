@@ -155,7 +155,7 @@
                                         <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
                                                        OnClick="@(() => StartEditNote(note))" />
                                     </MudStack>
-                                    <MudText>@note.Text</MudText>
+                                    <MudText>@TextLinkifier.ToMarkup(note.Text)</MudText>
                                     @if (note.ImagePaths.Any())
                                     {
                                         <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mt-1">
