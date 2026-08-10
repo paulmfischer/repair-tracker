@@ -29,6 +29,7 @@ public class Item
     public decimal EstimatedSellPrice { get; set; }
     public decimal ActualSellPrice { get; set; }
     public bool SellerFeeApplies { get; set; } = true;
+    public decimal SalesTax { get; set; }
     public decimal Postage { get; set; }
     public bool PostagePaidByMe { get; set; }
     public decimal HoursWorked { get; set; }
@@ -46,15 +47,18 @@ public class Item
         EstimatedSellPrice - Cost - Parts - (PurchaseShippingPaidByMe ? PurchaseShipping : 0) - ResellerFee(feePercent, perOrderFee);
 
     // If the buyer paid for postage, that amount was part of what eBay charges its fee on.
-    public decimal OrderTotal => ActualSellPrice + (PostagePaidByMe ? 0 : Postage);
+    // Sales tax collected from the buyer is also part of the order total eBay charges fees on,
+    // even though it's never the seller's money.
+    public decimal OrderTotal => ActualSellPrice + (PostagePaidByMe ? 0 : Postage) + SalesTax;
 
     public decimal ActualResellerFee(decimal feePercent, decimal perOrderFee) =>
         SellerFeeApplies ? Math.Round(OrderTotal * (feePercent / 100m), 2) + perOrderFee : 0m;
 
     // Postage is always an out-of-pocket shipping cost; it only inflates the fee base
     // when the buyer covered it (via OrderTotal), so it nets out of proceeds either way.
+    // Sales tax is always passed through to the state, so it's always subtracted back out.
     public decimal SaleProceeds(decimal feePercent, decimal perOrderFee) =>
-        OrderTotal - ActualResellerFee(feePercent, perOrderFee) - Postage;
+        OrderTotal - ActualResellerFee(feePercent, perOrderFee) - Postage - SalesTax;
 
     public decimal NetProfit(decimal feePercent, decimal perOrderFee) =>
         SaleProceeds(feePercent, perOrderFee)

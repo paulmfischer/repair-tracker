@@ -113,6 +113,12 @@ else if (_item is not null)
                                          Adornment="Adornment.Start" AdornmentText="$"
                                          Min="0m" Format="F2" />
 
+                        <MudText Class="fin-label">Sales Tax</MudText>
+                        <div></div>
+                        <MudNumericField @bind-Value="_item.SalesTax" Class="fin-input"
+                                         Adornment="Adornment.Start" AdornmentText="$"
+                                         Min="0m" Format="F2" />
+
                         <MudText Class="fin-label">Reseller Fee Applies</MudText>
                         <MudSwitch @bind-Value="_item.SellerFeeApplies" Color="Color.Primary" />
                         <div></div>
