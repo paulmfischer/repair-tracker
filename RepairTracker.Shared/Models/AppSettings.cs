@@ -9,5 +9,6 @@ public class AppSettings
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
 
-    public decimal ResellerFeePercentage { get; set; } = 9m;
+    public decimal ResellerFeePercentage { get; set; } = 13.6m;
+    public decimal PerOrderFee { get; set; } = 0.40m;
 }

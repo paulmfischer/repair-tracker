@@ -62,65 +62,106 @@ else if (_item is not null)
                 </MudExpansionPanel>
 
                 <MudExpansionPanel Text="Financials" @bind-Expanded="_financialsExpanded">
-                    <MudNumericField @bind-Value="_item.Cost" Label="Purchase Cost"
-                                     Adornment="Adornment.Start" AdornmentText="$"
-                                     Min="0m" Format="F2" Class="mb-3" />
-                    <MudNumericField @bind-Value="_item.Parts" Label="Parts Cost"
-                                     Adornment="Adornment.Start" AdornmentText="$"
-                                     Min="0m" Format="F2" Class="mb-3" />
-                    <MudNumericField @bind-Value="_item.EstimatedSellPrice" Label="Estimated Sell Price"
-                                     Adornment="Adornment.Start" AdornmentText="$"
-                                     Min="0m" Format="F2" Class="mb-3" />
+                    <div class="fin-grid mb-4">
+                        <MudText Class="fin-label">Purchase Cost</MudText>
+                        <div></div>
+                        <MudNumericField @bind-Value="_item.Cost" Class="fin-input"
+                                         Adornment="Adornment.Start" AdornmentText="$"
+                                         Min="0m" Format="F2" />
 
-                    <MudDivider Class="my-3" />
-                    <MudText Typo="Typo.subtitle2" Class="mb-2">Estimated (using @_feePercent% fee)</MudText>
-                    <MudSimpleTable Dense="true" Class="mb-4">
-                        <tbody>
-                            <tr>
-                                <td>Reseller Fee</td>
-                                <td>$@_item.ResellerFee(_feePercent).ToString("F2")</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Est. Profit</strong></td>
-                                <td style="color:@(_item.EstimatedProfit(_feePercent).ProfitColor())">
-                                    <strong>$@_item.EstimatedProfit(_feePercent).ToString("F2")</strong>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </MudSimpleTable>
+                        <MudText Class="fin-label">Postage</MudText>
+                        <MudSwitch @bind-Value="_item.PurchaseShippingPaidByMe" Color="Color.Primary">
+                            I paid
+                        </MudSwitch>
+                        <MudNumericField @bind-Value="_item.PurchaseShipping" Class="fin-input"
+                                         Adornment="Adornment.Start" AdornmentText="$"
+                                         Min="0m" Format="F2" />
 
-                    <MudDivider Class="my-3" />
-                    <MudText Typo="Typo.subtitle2" Class="mb-2">Actual</MudText>
-                    <MudNumericField @bind-Value="_item.ActualSellPrice"
-                                     Label="Actual Sell Price (after fees)"
-                                     Adornment="Adornment.Start" AdornmentText="$"
-                                     Min="0m" Format="F2" Class="mb-3" />
-                    <MudNumericField @bind-Value="_item.Postage" Label="Postage"
-                                     Adornment="Adornment.Start" AdornmentText="$"
-                                     Min="0m" Format="F2" Class="mb-3" />
-                    <MudNumericField @bind-Value="_item.HoursWorked" Label="Hours Worked"
-                                     Min="0m" Format="F1" Class="mb-3" />
+                        <MudText Class="fin-label">Parts Cost</MudText>
+                        <div></div>
+                        <MudNumericField @bind-Value="_item.Parts" Class="fin-input"
+                                         Adornment="Adornment.Start" AdornmentText="$"
+                                         Min="0m" Format="F2" />
 
-                    @if (_item.ActualSellPrice > 0)
-                    {
-                        <MudSimpleTable Dense="true">
-                            <tbody>
-                                <tr>
-                                    <td><strong>Net Profit</strong></td>
-                                    <td style="color:@(_item.NetProfit.ProfitColor())">
-                                        <strong>$@_item.NetProfit.ToString("F2")</strong>
-                                    </td>
-                                </tr>
-                                @if (_item.HourlyProfit.HasValue)
-                                {
-                                    <tr>
-                                        <td>Hourly Rate</td>
-                                        <td>$@_item.HourlyProfit!.Value.ToString("F2")/hr</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </MudSimpleTable>
-                    }
+                        <MudDivider Class="fin-full my-2" />
+                        <MudText Typo="Typo.subtitle2" Class="fin-full">Estimated (using @_feePercent% fee)</MudText>
+
+                        <MudText Class="fin-label">Estimated Sell Price</MudText>
+                        <div></div>
+                        <MudNumericField @bind-Value="_item.EstimatedSellPrice" Class="fin-input"
+                                         Adornment="Adornment.Start" AdornmentText="$"
+                                         Min="0m" Format="F2" />
+
+                        <MudText Class="fin-label">Reseller Fee</MudText>
+                        <div></div>
+                        <div class="fin-value">
+                            <span>$</span><span>@_item.ResellerFee(_feePercent, _perOrderFee).ToString("F2")</span>
+                        </div>
+
+                        <MudText Class="fin-label"><strong>Est. Profit</strong></MudText>
+                        <div></div>
+                        <div class="fin-value fin-value-bold" style="@($"color:{_item.EstimatedProfit(_feePercent, _perOrderFee).ProfitColor()}")">
+                            <span>$</span><span>@_item.EstimatedProfit(_feePercent, _perOrderFee).ToString("F2")</span>
+                        </div>
+
+                        <MudDivider Class="fin-full my-2" />
+                        <MudText Typo="Typo.subtitle2" Class="fin-full">Actual</MudText>
+
+                        <MudText Class="fin-label">Actual Sell Price</MudText>
+                        <div></div>
+                        <MudNumericField @bind-Value="_item.ActualSellPrice" Class="fin-input"
+                                         Adornment="Adornment.Start" AdornmentText="$"
+                                         Min="0m" Format="F2" />
+
+                        <MudText Class="fin-label">Reseller Fee Applies</MudText>
+                        <MudSwitch @bind-Value="_item.SellerFeeApplies" Color="Color.Primary" />
+                        <div></div>
+
+                        <MudText Class="fin-label">Postage</MudText>
+                        <MudSwitch @bind-Value="_item.PostagePaidByMe" Color="Color.Primary">
+                            I paid
+                        </MudSwitch>
+                        <MudNumericField @bind-Value="_item.Postage" Class="fin-input"
+                                         Adornment="Adornment.Start" AdornmentText="$"
+                                         Min="0m" Format="F2" />
+
+                        <MudText Class="fin-label">Hours Worked</MudText>
+                        <div></div>
+                        <MudNumericField @bind-Value="_item.HoursWorked" Class="fin-input"
+                                         Min="0m" Format="F1" />
+
+                        @if (_item.ActualSellPrice > 0)
+                        {
+                            <MudDivider Class="fin-full my-2" />
+
+                            <MudText Class="fin-label">Reseller Fee</MudText>
+                            <div></div>
+                            <div class="fin-value">
+                                <span>$</span><span>@_item.ActualResellerFee(_feePercent, _perOrderFee).ToString("F2")</span>
+                            </div>
+
+                            <MudText Class="fin-label">Sale Proceeds</MudText>
+                            <div></div>
+                            <div class="fin-value">
+                                <span>$</span><span>@_item.SaleProceeds(_feePercent, _perOrderFee).ToString("F2")</span>
+                            </div>
+
+                            <MudText Class="fin-label"><strong>Net Profit</strong></MudText>
+                            <div></div>
+                            <div class="fin-value fin-value-bold" style="@($"color:{_item.NetProfit(_feePercent, _perOrderFee).ProfitColor()}")">
+                                <span>$</span><span>@_item.NetProfit(_feePercent, _perOrderFee).ToString("F2")</span>
+                            </div>
+
+                            @if (_item.HourlyProfit(_feePercent, _perOrderFee).HasValue)
+                            {
+                                <MudText Class="fin-label">Hourly Rate</MudText>
+                                <div></div>
+                                <div class="fin-value">
+                                    <span>$</span><span>@_item.HourlyProfit(_feePercent, _perOrderFee)!.Value.ToString("F2")/hr</span>
+                                </div>
+                            }
+                        }
+                    </div>
                 </MudExpansionPanel>
             </MudExpansionPanels>
         </MudItem>
@@ -175,6 +216,7 @@ else if (_item is not null)
     private bool _saving;
     private bool _isNew;
     private decimal _feePercent;
+    private decimal _perOrderFee;
     private bool _infoExpanded;
     private bool _financialsExpanded;
 
@@ -218,6 +260,7 @@ else if (_item is not null)
     {
         var settings = await SettingsService.GetAsync();
         _feePercent = settings.ResellerFeePercentage;
+        _perOrderFee = settings.PerOrderFee;
 
         if (string.IsNullOrEmpty(Id))
         {

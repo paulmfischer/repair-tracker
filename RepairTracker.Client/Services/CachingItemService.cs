@@ -80,11 +80,11 @@ public class CachingItemService(ApiItemService api, IndexedDbStore cache, Outbox
         }
     }
 
-    public async Task<DashboardStats> GetDashboardStatsAsync(decimal feePercent)
+    public async Task<DashboardStats> GetDashboardStatsAsync(decimal feePercent, decimal perOrderFee)
     {
         try
         {
-            return await api.GetDashboardStatsAsync(feePercent);
+            return await api.GetDashboardStatsAsync(feePercent, perOrderFee);
         }
         catch (HttpRequestException ex) when (ex.StatusCode is null)
         {
@@ -93,8 +93,8 @@ public class CachingItemService(ApiItemService api, IndexedDbStore cache, Outbox
                 .ToDictionary(s => s, s => items.Count(i => i.Status == s));
 
             return new DashboardStats(
-                TotalEstimatedProfit: items.Sum(i => i.EstimatedProfit(feePercent)),
-                TotalActualProfit: items.Sum(i => i.NetProfit),
+                TotalEstimatedProfit: items.Sum(i => i.EstimatedProfit(feePercent, perOrderFee)),
+                TotalActualProfit: items.Sum(i => i.NetProfit(feePercent, perOrderFee)),
                 TotalPostage: items.Sum(i => i.Postage),
                 TotalHoursWorked: items.Sum(i => i.HoursWorked),
                 StatusCounts: statusCounts

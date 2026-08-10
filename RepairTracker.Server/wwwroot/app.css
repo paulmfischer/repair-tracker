@@ -97,3 +97,41 @@ h1:focus {
         transform: rotate(360deg);
     }
 }
+
+/* Receipt-style financials grid (ItemDetail.razor). Kept global rather than component-scoped
+   because MudBlazor components render their markup outside this file's scope boundary, so
+   scoped ::deep selectors don't reliably reach it. */
+.fin-grid {
+    display: grid;
+    grid-template-columns: 1fr auto minmax(100px, 130px);
+    column-gap: 8px;
+    row-gap: 4px;
+    align-items: center;
+}
+
+.fin-grid .fin-label {
+    white-space: nowrap;
+}
+
+.fin-grid .fin-value {
+    /* Confined to the same column as the numeric inputs (not spanning the toggle column too)
+       so the $ sign lines up with the input's adornment and the amount lines up with its digits. */
+    grid-column: 3;
+    display: flex;
+    justify-content: space-between;
+    /* Matches the width of the numeric input's up/down spin buttons so the amount lines up
+       with the digits in the inputs above/below it, not their right edge. */
+    padding-right: 28px;
+}
+
+.fin-grid .fin-value-bold {
+    font-weight: 700;
+}
+
+.fin-grid .fin-full {
+    grid-column: 1 / -1;
+}
+
+.fin-grid .fin-input input {
+    text-align: right;
+}

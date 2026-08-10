@@ -9,7 +9,7 @@ public interface IItemService
     Task CreateAsync(Item item);
     Task UpdateAsync(Item item);
     Task DeleteAsync(string id);
-    Task<DashboardStats> GetDashboardStatsAsync(decimal feePercent);
+    Task<DashboardStats> GetDashboardStatsAsync(decimal feePercent, decimal perOrderFee);
 }
 
 public record DashboardStats(
