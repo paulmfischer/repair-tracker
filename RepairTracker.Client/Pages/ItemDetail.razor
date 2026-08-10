@@ -4,6 +4,8 @@
 @inject ISettingsService SettingsService
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
+@using RepairTracker.Client.Services
 
 <PageTitle>@(_isNew ? "New Item" : _item?.Name ?? "Item")</PageTitle>
 
@@ -44,9 +46,15 @@ else if (_item is not null)
                             <MudSelectItem Value="src">@src.ToDisplayString()</MudSelectItem>
                         }
                     </MudSelect>
-                    <MudTextField @bind-Value="_item.PurchaseListingId" Label="Purchase Listing ID" Class="mb-3" />
+                    <MudTextField @bind-Value="_item.PurchaseListingId" Label="Purchase Listing ID" Class="mb-3"
+                                  Adornment="@(TextLinkifier.IsHttpUrl(_item.PurchaseListingId) ? Adornment.End : Adornment.None)"
+                                  AdornmentIcon="@Icons.Material.Filled.OpenInNew" AdornmentColor="Color.Primary"
+                                  OnAdornmentClick="@(() => OpenLink(_item.PurchaseListingId))" />
                     <MudDatePicker @bind-Date="_item.PurchaseDate" Label="Purchase Date" Class="mb-3" />
-                    <MudTextField @bind-Value="_item.SaleListingId" Label="Sale Listing ID" Class="mb-3" />
+                    <MudTextField @bind-Value="_item.SaleListingId" Label="Sale Listing ID" Class="mb-3"
+                                  Adornment="@(TextLinkifier.IsHttpUrl(_item.SaleListingId) ? Adornment.End : Adornment.None)"
+                                  AdornmentIcon="@Icons.Material.Filled.OpenInNew" AdornmentColor="Color.Primary"
+                                  OnAdornmentClick="@(() => OpenLink(_item.SaleListingId))" />
                     <MudDatePicker @bind-Date="_item.SoldDate" Label="Sold Date" Class="mb-3" />
                     <MudTextField @bind-Value="_item.GeneralNotes" Label="Notes" Lines="3" Class="mb-3" />
                     <MudTextField @bind-Value="_item.OriginalFault" Label="Original Fault"
@@ -197,6 +205,14 @@ else if (_item is not null)
     }
 
     private RepairLog? _repairLog;
+
+    private async Task OpenLink(string? url)
+    {
+        if (TextLinkifier.IsHttpUrl(url))
+        {
+            await JS.InvokeVoidAsync("open", url, "_blank");
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
