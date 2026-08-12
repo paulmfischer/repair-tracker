@@ -47,21 +47,26 @@ else if (_item is not null)
                             <MudSelectItem Value="src">@src.ToDisplayString()</MudSelectItem>
                         }
                     </MudSelect>
-                    <MudTextField @bind-Value="_item.PurchaseListingId" Label="Purchase Listing ID" Class="mb-3"
-                                  Adornment="@(TextLinkifier.IsHttpUrl(_item.PurchaseListingId) ? Adornment.End : Adornment.None)"
-                                  AdornmentIcon="@Icons.Material.Filled.OpenInNew" AdornmentColor="Color.Primary"
-                                  OnAdornmentClick="@(() => OpenLink(_item.PurchaseListingId))" />
-                    <MudDatePicker @bind-Date="_item.PurchaseDate" Label="Purchase Date" Class="mb-3" />
-                    <MudTextField @bind-Value="_item.SaleListingId" Label="Sale Listing ID" Class="mb-3"
-                                  Adornment="@(TextLinkifier.IsHttpUrl(_item.SaleListingId) ? Adornment.End : Adornment.None)"
-                                  AdornmentIcon="@Icons.Material.Filled.OpenInNew" AdornmentColor="Color.Primary"
-                                  OnAdornmentClick="@(() => OpenLink(_item.SaleListingId))" />
-                    <MudDatePicker @bind-Date="_item.SoldDate" Label="Sold Date" Class="mb-3" />
+                    @if (_item.Source != ItemSource.Repair)
+                    {
+                        <MudTextField @bind-Value="_item.PurchaseListingId" Label="Purchase Listing ID" Class="mb-3"
+                                      Adornment="@(TextLinkifier.IsHttpUrl(_item.PurchaseListingId) ? Adornment.End : Adornment.None)"
+                                      AdornmentIcon="@Icons.Material.Filled.OpenInNew" AdornmentColor="Color.Primary"
+                                      OnAdornmentClick="@(() => OpenLink(_item.PurchaseListingId))" />
+                        <MudDatePicker @bind-Date="_item.PurchaseDate" Label="Purchase Date" Class="mb-3" />
+                        <MudTextField @bind-Value="_item.SaleListingId" Label="Sale Listing ID" Class="mb-3"
+                                      Adornment="@(TextLinkifier.IsHttpUrl(_item.SaleListingId) ? Adornment.End : Adornment.None)"
+                                      AdornmentIcon="@Icons.Material.Filled.OpenInNew" AdornmentColor="Color.Primary"
+                                      OnAdornmentClick="@(() => OpenLink(_item.SaleListingId))" />
+                        <MudDatePicker @bind-Date="_item.SoldDate" Label="Sold Date" Class="mb-3" />
+                    }
                     <MudTextField @bind-Value="_item.GeneralNotes" Label="Notes" Lines="3" Class="mb-3" />
                     <MudTextField @bind-Value="_item.OriginalFault" Label="Original Fault"
                                   Lines="3" />
                 </MudExpansionPanel>
 
+                @if (_item.Source != ItemSource.Repair)
+                {
                 <MudExpansionPanel Text="Financials" @bind-Expanded="_financialsExpanded">
                     <div class="fin-grid mb-4">
                         <MudText Class="fin-label">Purchase Cost</MudText>
@@ -176,6 +181,7 @@ else if (_item is not null)
                         }
                     </div>
                 </MudExpansionPanel>
+                }
             </MudExpansionPanels>
         </MudItem>
 
