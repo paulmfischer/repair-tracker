@@ -8,7 +8,7 @@ public enum RepairStatus
     Intake,
     [Display(Name = "Diagnosis")]
     Diagnosis,
-    [Display(Name = "Parts Ordered")]
+    [Display(Name = "Awaiting Parts")]
     PartsOrdered,
     [Display(Name = "Repaired")]
     Repaired,
@@ -20,5 +20,12 @@ public enum RepairStatus
     // Not part of the normal repair flow — an item branches here (from Diagnosis onward)
     // when it's being kept as spare parts inventory instead of continuing to be repaired.
     [Display(Name = "Parts")]
-    Parts
+    Parts,
+
+    // Appended after Parts (not inserted earlier) because Status is stored in MongoDB as a raw
+    // ordinal int — inserting a member in the middle would silently reinterpret existing data.
+    [Display(Name = "Shipped")]
+    Shipped,
+    [Display(Name = "Completed")]
+    Completed
 }
