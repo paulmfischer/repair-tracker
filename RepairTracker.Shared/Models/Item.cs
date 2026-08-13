@@ -12,6 +12,7 @@ public class Item
     public string Name { get; set; } = string.Empty;
     public string? SerialNumber { get; set; }
     public string? BoardVersion { get; set; }
+    public string? WarrantyStickerNumber { get; set; }
     public ItemSource Source { get; set; } = ItemSource.eBay;
     public RepairStatus Status { get; set; } = RepairStatus.Intake;
 

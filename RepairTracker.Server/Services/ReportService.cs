@@ -35,6 +35,10 @@ public class ReportService(IItemService itemService, IWebHostEnvironment env, IC
                     {
                         column.Item().Text($"Board Version: {item.BoardVersion}").FontSize(10);
                     }
+                    if (!string.IsNullOrWhiteSpace(item.WarrantyStickerNumber))
+                    {
+                        column.Item().Text($"Warranty Sticker Number: {item.WarrantyStickerNumber}").FontSize(10);
+                    }
                     column.Item().Text($"Generated on {DateTime.Now:MMM d, yyyy h:mm tt}").FontSize(9).FontColor(Colors.Grey.Darken1);
                     if (item.PurchaseDate.HasValue)
                     {

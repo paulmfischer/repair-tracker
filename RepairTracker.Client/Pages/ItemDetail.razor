@@ -41,6 +41,8 @@ else if (_item is not null)
                     <MudTextField @bind-Value="_item.Name" Label="Item Name" Required="true" Class="mb-3" />
                     <MudTextField @bind-Value="_item.SerialNumber" Label="Serial Number (optional)" Class="mb-3" />
                     <MudTextField @bind-Value="_item.BoardVersion" Label="Board Version (optional)" Class="mb-3" />
+                    <MudTextField @bind-Value="_item.WarrantyStickerNumber" Label="Warranty Sticker Number (optional)"
+                                  MaxLength="10" Validation="@(new Func<string, string?>(ValidateWarrantyStickerNumber))" Class="mb-3" />
                     <MudSelect @bind-Value="_item.Source" Label="Source" Class="mb-3">
                         @foreach (var src in Enum.GetValues<ItemSource>())
                         {
@@ -241,6 +243,11 @@ else if (_item is not null)
     private decimal _perOrderFee;
     private bool _infoExpanded;
     private bool _financialsExpanded;
+
+    private static string? ValidateWarrantyStickerNumber(string value) =>
+        !string.IsNullOrEmpty(value) && !value.All(char.IsDigit)
+            ? "Must be a number"
+            : null;
 
     // The stepper is non-linear — clicking any step jumps straight to its status.
     private void SelectStatus(RepairStatus status)
