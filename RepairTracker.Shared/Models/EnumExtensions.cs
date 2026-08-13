@@ -28,7 +28,15 @@ public static class EnumExtensions
         [RepairStatus.Listed] = (Colors.Blue.Darken1, "#FFFFFF"),
         [RepairStatus.Sold] = (Colors.Green.Darken1, "#FFFFFF"),
         [RepairStatus.Parts] = (Colors.Cyan.Darken1, "#FFFFFF"),
+        [RepairStatus.Shipped] = (Colors.Indigo.Darken1, "#FFFFFF"),
+        [RepairStatus.Completed] = (Colors.Green.Darken3, "#FFFFFF"),
     };
+
+    // Statuses that branch off the main repair flow rather than being a step within it (see
+    // RepairBranch.All for the full definition of each branch's enter/return behavior).
+    public static readonly RepairStatus[] BranchStatuses = { RepairStatus.Parts };
+
+    public static bool IsBranch(this RepairStatus status) => BranchStatuses.Contains(status);
 
     // Inline style carrying each status's explicit MudBlazor.Colors swatch. Apply alongside
     // ToColor() (e.g. `Color="@status.ToColor()" Style="@status.ToColorStyle()"`) — the inline

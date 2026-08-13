@@ -22,15 +22,16 @@ else if (_item is not null)
 {
     <MudGrid>
         <MudItem xs="12">
-            @if (_item.Status == RepairStatus.Parts)
+            @{ var activeBranch = RepairBranch.All.FirstOrDefault(b => _item.Status == b.BranchStatus); }
+            @if (activeBranch is not null)
             {
-                <MudAlert Severity="Severity.Normal" Variant="Variant.Outlined" Class="mb-2" Style="@RepairStatus.Parts.ToOutlinedColorStyle()">
-                    This item has been converted to Parts inventory and is no longer moving through the repair flow.
+                <MudAlert Severity="Severity.Normal" Variant="Variant.Outlined" Class="mb-2" Style="@activeBranch.BranchStatus.ToOutlinedColorStyle()">
+                    @activeBranch.AlertText
                 </MudAlert>
             }
             else
             {
-                <RepairStepper Status="_item.Status" StatusChanged="SelectStatus" Class="mb-2" />
+                <RepairStepper Status="_item.Status" Source="_item.Source" StatusChanged="SelectStatus" Class="mb-2" />
             }
         </MudItem>
 
@@ -46,21 +47,26 @@ else if (_item is not null)
                             <MudSelectItem Value="src">@src.ToDisplayString()</MudSelectItem>
                         }
                     </MudSelect>
-                    <MudTextField @bind-Value="_item.PurchaseListingId" Label="Purchase Listing ID" Class="mb-3"
-                                  Adornment="@(TextLinkifier.IsHttpUrl(_item.PurchaseListingId) ? Adornment.End : Adornment.None)"
-                                  AdornmentIcon="@Icons.Material.Filled.OpenInNew" AdornmentColor="Color.Primary"
-                                  OnAdornmentClick="@(() => OpenLink(_item.PurchaseListingId))" />
-                    <MudDatePicker @bind-Date="_item.PurchaseDate" Label="Purchase Date" Class="mb-3" />
-                    <MudTextField @bind-Value="_item.SaleListingId" Label="Sale Listing ID" Class="mb-3"
-                                  Adornment="@(TextLinkifier.IsHttpUrl(_item.SaleListingId) ? Adornment.End : Adornment.None)"
-                                  AdornmentIcon="@Icons.Material.Filled.OpenInNew" AdornmentColor="Color.Primary"
-                                  OnAdornmentClick="@(() => OpenLink(_item.SaleListingId))" />
-                    <MudDatePicker @bind-Date="_item.SoldDate" Label="Sold Date" Class="mb-3" />
+                    @if (_item.Source != ItemSource.Repair)
+                    {
+                        <MudTextField @bind-Value="_item.PurchaseListingId" Label="Purchase Listing ID" Class="mb-3"
+                                      Adornment="@(TextLinkifier.IsHttpUrl(_item.PurchaseListingId) ? Adornment.End : Adornment.None)"
+                                      AdornmentIcon="@Icons.Material.Filled.OpenInNew" AdornmentColor="Color.Primary"
+                                      OnAdornmentClick="@(() => OpenLink(_item.PurchaseListingId))" />
+                        <MudDatePicker @bind-Date="_item.PurchaseDate" Label="Purchase Date" Class="mb-3" />
+                        <MudTextField @bind-Value="_item.SaleListingId" Label="Sale Listing ID" Class="mb-3"
+                                      Adornment="@(TextLinkifier.IsHttpUrl(_item.SaleListingId) ? Adornment.End : Adornment.None)"
+                                      AdornmentIcon="@Icons.Material.Filled.OpenInNew" AdornmentColor="Color.Primary"
+                                      OnAdornmentClick="@(() => OpenLink(_item.SaleListingId))" />
+                        <MudDatePicker @bind-Date="_item.SoldDate" Label="Sold Date" Class="mb-3" />
+                    }
                     <MudTextField @bind-Value="_item.GeneralNotes" Label="Notes" Lines="3" Class="mb-3" />
                     <MudTextField @bind-Value="_item.OriginalFault" Label="Original Fault"
                                   Lines="3" />
                 </MudExpansionPanel>
 
+                @if (_item.Source != ItemSource.Repair)
+                {
                 <MudExpansionPanel Text="Financials" @bind-Expanded="_financialsExpanded">
                     <div class="fin-grid mb-4">
                         <MudText Class="fin-label">Purchase Cost</MudText>
@@ -175,6 +181,7 @@ else if (_item is not null)
                         }
                     </div>
                 </MudExpansionPanel>
+                }
             </MudExpansionPanels>
         </MudItem>
 
@@ -195,17 +202,20 @@ else if (_item is not null)
         <MudButton Variant="Variant.Outlined" Href="/items">
             Cancel
         </MudButton>
-        @if (!_isNew && _item.Status != RepairStatus.Parts && _item.Status is not (RepairStatus.Intake or RepairStatus.Sold))
+        @foreach (var branch in RepairBranch.All)
         {
-            <MudButton Variant="Variant.Outlined" Style="@RepairStatus.Parts.ToOutlinedColorStyle()" OnClick="MarkAsParts">
-                Mark as Parts
-            </MudButton>
-        }
-        @if (!_isNew && _item.Status == RepairStatus.Parts)
-        {
-            <MudButton Variant="Variant.Outlined" OnClick="ReturnToRepairFlow">
-                Return to Repair Flow
-            </MudButton>
+            @if (!_isNew && _item.Status == branch.BranchStatus)
+            {
+                <MudButton Variant="Variant.Outlined" OnClick="@(() => EnterOrReturnBranch(branch, enter: false))">
+                    @branch.ReturnLabel
+                </MudButton>
+            }
+            else if (!_isNew && branch.AvailableFrom(_item.Status))
+            {
+                <MudButton Variant="Variant.Outlined" Style="@branch.BranchStatus.ToOutlinedColorStyle()" OnClick="@(() => EnterOrReturnBranch(branch, enter: true))">
+                    @branch.EnterLabel
+                </MudButton>
+            }
         }
         @if (!_isNew && _item.Status != RepairStatus.Intake)
         {
@@ -235,24 +245,15 @@ else if (_item is not null)
     // The stepper is non-linear — clicking any step jumps straight to its status.
     private void SelectStatus(RepairStatus status)
     {
-        if (_item is null || _item.Status == RepairStatus.Parts) return;
+        if (_item is null || _item.Status.IsBranch()) return;
         _item.Status = status;
         SetDefaultPanelExpansion();
     }
 
-    private async Task MarkAsParts()
+    private async Task EnterOrReturnBranch(RepairBranch branch, bool enter)
     {
         if (_item is null) return;
-        _item.Status = RepairStatus.Parts;
-        SetDefaultPanelExpansion();
-        await Save();
-        StateHasChanged();
-    }
-
-    private async Task ReturnToRepairFlow()
-    {
-        if (_item is null) return;
-        _item.Status = RepairStatus.Diagnosis;
+        _item.Status = enter ? branch.BranchStatus : branch.ReturnStatus;
         SetDefaultPanelExpansion();
         await Save();
         StateHasChanged();
@@ -302,7 +303,7 @@ else if (_item is not null)
         {
             RepairStatus.Intake => (true, false),
             RepairStatus.Listed or RepairStatus.Sold => (true, true),
-            RepairStatus.Parts => (true, false),
+            var s when s.IsBranch() => (true, false),
             _ => (false, false)
         };
     }

@@ -35,12 +35,10 @@
 </div>
 
 @code {
-    // The normal, sequential repair flow — excludes Parts, which is a branch off this flow
-    // rather than a step within it.
-    private static readonly RepairStatus[] FlowStatuses =
-        Enum.GetValues<RepairStatus>().Where(s => s != RepairStatus.Parts).ToArray();
+    private RepairStatus[] FlowStatuses => RepairFlow.For(Source);
 
     [Parameter, EditorRequired] public RepairStatus Status { get; set; }
+    [Parameter] public ItemSource Source { get; set; }
     [Parameter] public EventCallback<RepairStatus> StatusChanged { get; set; }
     [Parameter] public string? Class { get; set; }
 
