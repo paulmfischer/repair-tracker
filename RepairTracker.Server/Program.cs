@@ -7,10 +7,31 @@ using RepairTracker.Server;
 using RepairTracker.Server.Components;
 using RepairTracker.Server.Endpoints;
 using RepairTracker.Services;
+using Serilog;
+using Serilog.Enrichers.Span;
+using Serilog.Events;
 
 QuestPDF.Settings.License = LicenseType.Community;
 
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, services, loggerConfig) =>
+{
+    loggerConfig.ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext()
+        .Enrich.WithSpan();
+
+    var seqUrl = context.Configuration["Seq:ServerUrl"];
+    if (!string.IsNullOrWhiteSpace(seqUrl))
+    {
+        loggerConfig.WriteTo.Seq(seqUrl);
+    }
+});
 
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
@@ -34,6 +55,25 @@ if (!string.IsNullOrWhiteSpace(dataProtectionPath))
 }
 
 var app = builder.Build();
+
+app.UseSerilogRequestLogging(options =>
+{
+    // Static content (compiled JS/CSS/WASM assets, uploaded images, generated reports) has a file
+    // extension on its last path segment; actual page/API routes in this app never do. Log those
+    // at Verbose so they're dropped by the default Information minimum level instead of drowning
+    // out real request logs, while still logging errors on them at Error regardless.
+    options.GetLevel = (httpContext, elapsed, ex) => ex is not null
+        ? LogEventLevel.Error
+        : IsStaticAssetPath(httpContext.Request.Path)
+            ? LogEventLevel.Verbose
+            : LogEventLevel.Information;
+});
+
+static bool IsStaticAssetPath(PathString path)
+{
+    var lastSegment = path.Value?.Split('/').LastOrDefault();
+    return !string.IsNullOrEmpty(lastSegment) && lastSegment.Contains('.');
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -68,4 +108,15 @@ app.MapReportEndpoints();
 // an actual round trip to this endpoint to determine connectivity instead.
 app.MapGet("/api/ping", () => Results.Ok());
 
-app.Run();
+try
+{
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

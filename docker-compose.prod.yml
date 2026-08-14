@@ -10,6 +10,7 @@ services:
       - MongoDB__Database=RepairTracker
       - Uploads__Path=/data/uploads
       - DataProtection__Path=/data/keys
+      - Seq__ServerUrl=${SEQ_SERVER_URL:-}
     volumes:
       - uploads:/data/uploads
       - keys:/data/keys
