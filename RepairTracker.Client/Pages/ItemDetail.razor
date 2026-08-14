@@ -5,6 +5,7 @@
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
+@using System.Net
 @using RepairTracker.Client.Services
 
 <PageTitle>@(_isNew ? "New Item" : _item?.Name ?? "Item")</PageTitle>
@@ -17,6 +18,16 @@
 @if (_loading)
 {
     <MudProgressCircular Indeterminate="true" />
+}
+else if (_notFound)
+{
+    <MudAlert Severity="Severity.Warning">Item not found. It may have been deleted.</MudAlert>
+    <MudButton Variant="Variant.Outlined" Href="/items" Class="mt-3">Back to Items</MudButton>
+}
+else if (_loadError)
+{
+    <MudAlert Severity="Severity.Error">Couldn't load this item. Check your connection and try again.</MudAlert>
+    <MudButton Variant="Variant.Outlined" OnClick="LoadAsync" Class="mt-3">Try Again</MudButton>
 }
 else if (_item is not null)
 {
@@ -237,6 +248,8 @@ else if (_item is not null)
 
     private Item? _item;
     private bool _loading = true;
+    private bool _notFound;
+    private bool _loadError;
     private bool _saving;
     private bool _isNew;
     private decimal _feePercent;
@@ -276,30 +289,49 @@ else if (_item is not null)
         }
     }
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
     {
-        var settings = await SettingsService.GetAsync();
-        _feePercent = settings.ResellerFeePercentage;
-        _perOrderFee = settings.PerOrderFee;
+        _loading = true;
+        _notFound = false;
+        _loadError = false;
 
-        if (string.IsNullOrEmpty(Id))
+        try
         {
-            _isNew = true;
-            _item = new Item
+            var settings = await SettingsService.GetAsync();
+            _feePercent = settings.ResellerFeePercentage;
+            _perOrderFee = settings.PerOrderFee;
+
+            if (string.IsNullOrEmpty(Id))
             {
-                Cost = Cost,
-                Parts = Parts,
-                EstimatedSellPrice = EstimatedSellPrice
-            };
+                _isNew = true;
+                _item = new Item
+                {
+                    Cost = Cost,
+                    Parts = Parts,
+                    EstimatedSellPrice = EstimatedSellPrice
+                };
+            }
+            else
+            {
+                _item = await ItemService.GetByIdAsync(Id);
+            }
+
+            SetDefaultPanelExpansion();
         }
-        else
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            _item = await ItemService.GetByIdAsync(Id);
+            _notFound = true;
         }
-
-        SetDefaultPanelExpansion();
-
-        _loading = false;
+        catch (Exception)
+        {
+            _loadError = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private void SetDefaultPanelExpansion()
@@ -320,25 +352,34 @@ else if (_item is not null)
         if (_item is null) return;
         _saving = true;
 
-        if (_isNew)
+        try
         {
-            var note = _repairLog is not null ? await _repairLog.BuildDraftNoteAsync() : null;
-            if (note is not null)
+            if (_isNew)
             {
-                _item.Notes.Add(note);
+                var note = _repairLog is not null ? await _repairLog.BuildDraftNoteAsync() : null;
+                if (note is not null)
+                {
+                    _item.Notes.Add(note);
+                }
+
+                await ItemService.CreateAsync(_item);
+                Snackbar.Add("Item created", Severity.Success);
+                Nav.NavigateTo($"/items/{_item.Id}");
+                _isNew = false;
             }
-
-            await ItemService.CreateAsync(_item);
-            Snackbar.Add("Item created", Severity.Success);
-            Nav.NavigateTo($"/items/{_item.Id}");
-            _isNew = false;
+            else
+            {
+                await ItemService.UpdateAsync(_item);
+                Snackbar.Add("Saved", Severity.Success);
+            }
         }
-        else
+        catch (Exception)
         {
-            await ItemService.UpdateAsync(_item);
-            Snackbar.Add("Saved", Severity.Success);
+            Snackbar.Add("Couldn't save changes. Check your connection and try again.", Severity.Error);
         }
-
-        _saving = false;
+        finally
+        {
+            _saving = false;
+        }
     }
 }

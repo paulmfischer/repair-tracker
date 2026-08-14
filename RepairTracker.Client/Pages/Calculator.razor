@@ -5,11 +5,16 @@
 
 <MudText Typo="Typo.h5" Class="mb-4">Pre-Purchase Calculator</MudText>
 
-@if (_settings is null)
+@if (_loading)
 {
     <MudProgressCircular Indeterminate="true" />
 }
-else
+else if (_loadError)
+{
+    <MudAlert Severity="Severity.Error">Couldn't load settings. Check your connection and try again.</MudAlert>
+    <MudButton Variant="Variant.Outlined" OnClick="LoadAsync" Class="mt-3">Try Again</MudButton>
+}
+else if (_settings is not null)
 {
     <MudGrid>
         <MudItem xs="12" md="6">
@@ -68,6 +73,8 @@ else
 
 @code {
     private AppSettings? _settings;
+    private bool _loading = true;
+    private bool _loadError;
     private decimal _cost;
     private decimal _parts;
     private decimal _estimatedSellPrice;
@@ -75,10 +82,26 @@ else
     private decimal _totalCosts;
     private decimal _grossProfit;
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
     {
-        _settings = await SettingsService.GetAsync();
-        Recalculate();
+        _loading = true;
+        _loadError = false;
+
+        try
+        {
+            _settings = await SettingsService.GetAsync();
+            Recalculate();
+        }
+        catch (Exception)
+        {
+            _loadError = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private void Recalculate()

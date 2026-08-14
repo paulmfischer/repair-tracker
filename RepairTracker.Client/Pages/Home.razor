@@ -10,6 +10,11 @@
 {
     <MudProgressCircular Indeterminate="true" />
 }
+else if (_loadError)
+{
+    <MudAlert Severity="Severity.Error">Couldn't load the dashboard. Check your connection and try again.</MudAlert>
+    <MudButton Variant="Variant.Outlined" OnClick="LoadAsync" Class="mt-3">Try Again</MudButton>
+}
 else if (_stats is not null)
 {
     <MudGrid Class="mb-6">
@@ -80,22 +85,38 @@ else if (_stats is not null)
 @code {
     private DashboardStats? _stats;
     private bool _loading = true;
+    private bool _loadError;
     private double[] _statusData = [];
     private string[] _statusLabels = [];
     private ChartOptions _chartOptions = new();
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
     {
-        var settings = await SettingsService.GetAsync();
-        _stats = await ItemService.GetDashboardStatsAsync(settings.ResellerFeePercentage, settings.PerOrderFee);
-        _statusData = _stats.StatusCounts.Values.Select(v => (double)v).ToArray();
-        _statusLabels = _stats.StatusCounts.Keys.Select(k => k.ToDisplayString()).ToArray();
-        _chartOptions = new ChartOptions
+        _loading = true;
+        _loadError = false;
+
+        try
         {
-            ChartPalette = _stats.StatusCounts.Keys.Select(k => k.ToHex()).ToArray(),
-            ShowLegend = false,
-        };
-        _loading = false;
+            var settings = await SettingsService.GetAsync();
+            _stats = await ItemService.GetDashboardStatsAsync(settings.ResellerFeePercentage, settings.PerOrderFee);
+            _statusData = _stats.StatusCounts.Values.Select(v => (double)v).ToArray();
+            _statusLabels = _stats.StatusCounts.Keys.Select(k => k.ToDisplayString()).ToArray();
+            _chartOptions = new ChartOptions
+            {
+                ChartPalette = _stats.StatusCounts.Keys.Select(k => k.ToHex()).ToArray(),
+                ShowLegend = false,
+            };
+        }
+        catch (Exception)
+        {
+            _loadError = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
     
     private string GetColor(decimal profit) => $"color:{profit.ProfitColor()};";

@@ -35,6 +35,11 @@
 {
     <MudProgressCircular Indeterminate="true" />
 }
+else if (_loadError)
+{
+    <MudAlert Severity="Severity.Error">Couldn't load items. Check your connection and try again.</MudAlert>
+    <MudButton Variant="Variant.Outlined" OnClick="LoadAsync" Class="mt-3">Try Again</MudButton>
+}
 else
 {
     <MudDataGrid T="Item" Items="FilteredItems" Hover="true" Dense="true"
@@ -123,6 +128,7 @@ else
 @code {
     private List<Item> _items = [];
     private bool _loading = true;
+    private bool _loadError;
     private decimal _feePercent;
     private decimal _perOrderFee;
     private string _search = string.Empty;
@@ -144,13 +150,28 @@ else
                     i.Name.Contains(_search, StringComparison.OrdinalIgnoreCase))
         .Where(i => _statusFilter is null || i.Status == _statusFilter);
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
     {
-        var settings = await SettingsService.GetAsync();
-        _feePercent = settings.ResellerFeePercentage;
-        _perOrderFee = settings.PerOrderFee;
-        _items = await ItemService.GetAllAsync();
-        _loading = false;
+        _loading = true;
+        _loadError = false;
+
+        try
+        {
+            var settings = await SettingsService.GetAsync();
+            _feePercent = settings.ResellerFeePercentage;
+            _perOrderFee = settings.PerOrderFee;
+            _items = await ItemService.GetAllAsync();
+        }
+        catch (Exception)
+        {
+            _loadError = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private async Task DeleteItem(Item item)
@@ -162,9 +183,16 @@ else
 
         if (result == true)
         {
-            await ItemService.DeleteAsync(item.Id);
-            _items.Remove(item);
-            Snackbar.Add("Item deleted", Severity.Info);
+            try
+            {
+                await ItemService.DeleteAsync(item.Id);
+                _items.Remove(item);
+                Snackbar.Add("Item deleted", Severity.Info);
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("Couldn't delete item. Check your connection and try again.", Severity.Error);
+            }
         }
     }
 }

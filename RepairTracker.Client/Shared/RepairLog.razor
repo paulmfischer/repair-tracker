@@ -284,15 +284,24 @@
     {
         _addingNote = true;
 
-        var note = await BuildDraftNoteAsync();
-        if (note is not null)
+        try
         {
-            Item.Notes.Add(note);
-            await ItemService.UpdateAsync(Item);
-            Snackbar.Add("Note added", Severity.Success);
+            var note = await BuildDraftNoteAsync();
+            if (note is not null)
+            {
+                Item.Notes.Add(note);
+                await ItemService.UpdateAsync(Item);
+                Snackbar.Add("Note added", Severity.Success);
+            }
         }
-
-        _addingNote = false;
+        catch (Exception)
+        {
+            Snackbar.Add("Couldn't add note. Check your connection and try again.", Severity.Error);
+        }
+        finally
+        {
+            _addingNote = false;
+        }
     }
 
     private void StartEditNote(RepairNote note)
@@ -339,24 +348,34 @@
     {
         _savingEdit = true;
 
-        note.Text = _editNoteText.Trim();
-        note.ImagePaths = _editImagePaths;
-        note.ThumbnailPaths = _editThumbnailPaths;
-
-        if (_editNewFiles.Count > 0)
+        try
         {
-            await UploadNoteFilesAsync(note, _editNewFiles);
-        }
+            note.Text = _editNoteText.Trim();
+            note.ImagePaths = _editImagePaths;
+            note.ThumbnailPaths = _editThumbnailPaths;
 
-        foreach (var removed in _editRemovedImagePaths)
+            if (_editNewFiles.Count > 0)
+            {
+                await UploadNoteFilesAsync(note, _editNewFiles);
+            }
+
+            foreach (var removed in _editRemovedImagePaths)
+            {
+                await DeleteNoteImageAsync(removed);
+            }
+
+            await ItemService.UpdateAsync(Item);
+            Snackbar.Add("Note updated", Severity.Success);
+
+            CancelEditNote();
+        }
+        catch (Exception)
         {
-            await DeleteNoteImageAsync(removed);
+            Snackbar.Add("Couldn't save note. Check your connection and try again.", Severity.Error);
         }
-
-        await ItemService.UpdateAsync(Item);
-        Snackbar.Add("Note updated", Severity.Success);
-
-        CancelEditNote();
-        _savingEdit = false;
+        finally
+        {
+            _savingEdit = false;
+        }
     }
 }

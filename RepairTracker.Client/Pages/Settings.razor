@@ -6,11 +6,16 @@
 
 <MudText Typo="Typo.h5" Class="mb-4">Settings</MudText>
 
-@if (_settings is null)
+@if (_loading)
 {
     <MudProgressCircular Indeterminate="true" />
 }
-else
+else if (_loadError)
+{
+    <MudAlert Severity="Severity.Error">Couldn't load settings. Check your connection and try again.</MudAlert>
+    <MudButton Variant="Variant.Outlined" OnClick="LoadAsync" Class="mt-3">Try Again</MudButton>
+}
+else if (_settings is not null)
 {
     <MudCard>
         <MudCardContent>
@@ -40,17 +45,48 @@ else
 
 @code {
     private AppSettings? _settings;
+    private bool _loading = true;
+    private bool _loadError;
     private bool _saving;
 
-    protected override async Task OnInitializedAsync() =>
-        _settings = await SettingsService.GetAsync();
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = false;
+
+        try
+        {
+            _settings = await SettingsService.GetAsync();
+        }
+        catch (Exception)
+        {
+            _loadError = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
 
     private async Task Save()
     {
         if (_settings is null) return;
         _saving = true;
-        await SettingsService.SaveAsync(_settings);
-        _saving = false;
-        Snackbar.Add("Settings saved", Severity.Success);
+
+        try
+        {
+            await SettingsService.SaveAsync(_settings);
+            Snackbar.Add("Settings saved", Severity.Success);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Couldn't save settings. Check your connection and try again.", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
     }
 }
