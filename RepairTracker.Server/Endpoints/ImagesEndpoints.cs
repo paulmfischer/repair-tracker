@@ -8,8 +8,9 @@ public static class ImagesEndpoints
     public static void MapImagesEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapPost("/api/items/{itemId}/notes/{noteId}/images", async (
-            string itemId, string noteId, IFormFileCollection files, IWebHostEnvironment env, IConfiguration config) =>
+            string itemId, string noteId, IFormFileCollection files, IWebHostEnvironment env, IConfiguration config, ILogger<Program> logger) =>
         {
+            logger.LogInformation("Uploading {FileCount} image(s) for item {ItemId}, note {NoteId}", files.Count, itemId, noteId);
             var uploadDir = Path.Combine(UploadsPath.GetRoot(env, config), itemId, noteId);
             Directory.CreateDirectory(uploadDir);
             var thumbDir = Path.Combine(uploadDir, "thumbs");
@@ -31,10 +32,11 @@ public static class ImagesEndpoints
                 thumbPaths.Add($"uploads/{itemId}/{noteId}/thumbs/{safeName}");
             }
 
+            logger.LogInformation("Uploaded {FileCount} image(s) for item {ItemId}, note {NoteId}", paths.Count, itemId, noteId);
             return Results.Ok(new ImageUploadResult(paths, thumbPaths));
         }).DisableAntiforgery();
 
-        app.MapDelete("/api/images", (string path, IWebHostEnvironment env, IConfiguration config) =>
+        app.MapDelete("/api/images", (string path, IWebHostEnvironment env, IConfiguration config, ILogger<Program> logger) =>
         {
             var uploadsRoot = UploadsPath.GetRoot(env, config);
             var relative = path.StartsWith("uploads/") ? path["uploads/".Length..] : path;
@@ -42,6 +44,7 @@ public static class ImagesEndpoints
 
             if (!fullPath.StartsWith(Path.GetFullPath(uploadsRoot), StringComparison.Ordinal))
             {
+                logger.LogWarning("Rejected image delete request outside uploads root: {Path}", path);
                 return Results.BadRequest();
             }
 

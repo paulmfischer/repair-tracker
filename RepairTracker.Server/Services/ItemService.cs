@@ -8,14 +8,26 @@ namespace RepairTracker.Services;
 public class ItemService : IItemService
 {
     private readonly MongoDbContext _db;
+    private readonly ILogger<ItemService> _logger;
 
-    public ItemService(MongoDbContext db) => _db = db;
+    public ItemService(MongoDbContext db, ILogger<ItemService> logger)
+    {
+        _db = db;
+        _logger = logger;
+    }
 
     public async Task<List<Item>> GetAllAsync() =>
         await _db.Items.Find(_ => true).SortByDescending(i => i.CreatedAt).ToListAsync();
 
-    public async Task<Item?> GetByIdAsync(string id) =>
-        await _db.Items.Find(i => i.Id == id).FirstOrDefaultAsync();
+    public async Task<Item?> GetByIdAsync(string id)
+    {
+        var item = await _db.Items.Find(i => i.Id == id).FirstOrDefaultAsync();
+        if (item is null)
+        {
+            _logger.LogWarning("Item {ItemId} not found", id);
+        }
+        return item;
+    }
 
     public async Task CreateAsync(Item item)
     {
@@ -25,6 +37,7 @@ public class ItemService : IItemService
         // Upsert rather than insert so a replayed offline-outbox create (same client-minted Id) is
         // idempotent instead of throwing a duplicate-key error if it somehow gets sent twice.
         await _db.Items.ReplaceOneAsync(i => i.Id == item.Id, item, new ReplaceOptions { IsUpsert = true });
+        _logger.LogInformation("Item {ItemId} created", item.Id);
     }
 
     public async Task UpdateAsync(Item item)
@@ -32,10 +45,14 @@ public class ItemService : IItemService
         ClearRepairOnlyFields(item);
         item.UpdatedAt = DateTime.UtcNow;
         await _db.Items.ReplaceOneAsync(i => i.Id == item.Id, item);
+        _logger.LogInformation("Item {ItemId} updated", item.Id);
     }
 
-    public async Task DeleteAsync(string id) =>
+    public async Task DeleteAsync(string id)
+    {
         await _db.Items.DeleteOneAsync(i => i.Id == id);
+        _logger.LogInformation("Item {ItemId} deleted", id);
+    }
 
     // Purchase/sale listing info, dates, and all financials are hidden on the client for
     // Repair-sourced items (never bought for resale), so enforce that they're actually cleared
