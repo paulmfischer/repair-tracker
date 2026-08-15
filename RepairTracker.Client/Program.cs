@@ -22,11 +22,15 @@ builder.Services.AddHttpClient("Api", client => client.BaseAddress = new Uri(bui
 
 builder.Services.AddScoped(sp => new ApiItemService(sp.GetRequiredService<IHttpClientFactory>().CreateClient("Api")));
 builder.Services.AddScoped(sp => new ApiSettingsService(sp.GetRequiredService<IHttpClientFactory>().CreateClient("Api")));
+builder.Services.AddScoped(sp => new ApiWikiArticleService(sp.GetRequiredService<IHttpClientFactory>().CreateClient("Api")));
 
 builder.Services.AddScoped<IndexedDbStore>();
 builder.Services.AddScoped<OutboxStore>();
 builder.Services.AddScoped<IItemService, CachingItemService>();
 builder.Services.AddScoped<ISettingsService, CachingSettingsService>();
 builder.Services.AddScoped<OutboxSyncService>();
+
+// Online-only for v1 — no IndexedDB caching/outbox decorator, unlike Items/Settings above.
+builder.Services.AddScoped<IWikiArticleService>(sp => sp.GetRequiredService<ApiWikiArticleService>());
 
 await builder.Build().RunAsync();

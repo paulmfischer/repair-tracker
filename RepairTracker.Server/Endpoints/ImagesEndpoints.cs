@@ -42,7 +42,7 @@ public static class ImagesEndpoints
             var relative = path.StartsWith("uploads/") ? path["uploads/".Length..] : path;
             var fullPath = Path.GetFullPath(Path.Combine(uploadsRoot, relative));
 
-            if (!fullPath.StartsWith(Path.GetFullPath(uploadsRoot), StringComparison.Ordinal))
+            if (!UploadsPath.IsInsideRoot(fullPath, uploadsRoot))
             {
                 logger.LogWarning("Rejected image delete request outside uploads root: {Path}", path);
                 return Results.BadRequest();
@@ -125,7 +125,7 @@ public static class ImagesEndpoints
         var relative = relativeOrPrefixedPath.StartsWith("uploads/") ? relativeOrPrefixedPath["uploads/".Length..] : relativeOrPrefixedPath;
         var fullPath = Path.GetFullPath(Path.Combine(uploadsRoot, relative));
 
-        if (!fullPath.StartsWith(Path.GetFullPath(uploadsRoot), StringComparison.Ordinal))
+        if (!UploadsPath.IsInsideRoot(fullPath, uploadsRoot))
         {
             return;
         }

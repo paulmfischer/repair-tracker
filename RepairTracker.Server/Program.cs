@@ -44,6 +44,8 @@ builder.Services.AddScoped<ItemService>();
 builder.Services.AddScoped<IItemService>(sp => sp.GetRequiredService<ItemService>());
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<WikiArticleService>();
+builder.Services.AddScoped<IWikiArticleService>(sp => sp.GetRequiredService<WikiArticleService>());
 
 var dataProtectionPath = builder.Configuration["DataProtection:Path"];
 if (!string.IsNullOrWhiteSpace(dataProtectionPath))
@@ -102,6 +104,8 @@ app.MapItemsEndpoints();
 app.MapSettingsEndpoints();
 app.MapImagesEndpoints();
 app.MapReportEndpoints();
+app.MapWikiEndpoints();
+app.MapWikiFilesEndpoints();
 
 // Cheap, DB-free reachability probe: DevTools' offline emulation doesn't reliably flip
 // navigator.onLine (only real hardware disconnects reliably do), so ConnectivityService uses
