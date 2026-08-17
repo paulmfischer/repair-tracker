@@ -74,7 +74,8 @@ else
     <MudTreeView T="WikiTreeValue" Items="_tree" Hover="true" ExpandOnClick="true"
                  SelectedValueChanged="OnTreeValueSelected">
         <ItemTemplate>
-            <MudTreeViewItem Value="@context.Value" Items="@context.Children" Icon="@context.Icon" Text="@context.Text" />
+            <MudTreeViewItem Value="@context.Value" Items="@context.Children" Icon="@context.Icon" Text="@context.Text"
+                              @bind-Expanded="@context.Expanded" />
         </ItemTemplate>
     </MudTreeView>
 }
@@ -151,7 +152,8 @@ else
                         Text = segment,
                         Icon = Icons.Material.Filled.Folder,
                         Value = new WikiTreeValue(false, pathSoFar),
-                        Children = []
+                        Children = [],
+                        Expanded = currentLevel == root
                     };
                     folderNodes[pathSoFar] = folderNode;
                     currentLevel.Add(folderNode);

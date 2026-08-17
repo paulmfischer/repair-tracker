@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components.Forms;
 using RepairTracker.Models;
@@ -50,6 +51,7 @@ public class ApiWikiArticleService(HttpClient http) : IWikiArticleService
         foreach (var file in files)
         {
             var streamContent = new StreamContent(file.OpenReadStream(maxAllowedSize: 25 * 1024 * 1024));
+            streamContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
             content.Add(streamContent, "files", file.Name);
         }
 

@@ -1,5 +1,5 @@
 @page "/wiki/new"
-@page "/wiki/{Id}"
+@page "/wiki/{Id}/edit"
 @using System.Net
 @using RepairTracker.Client.Services
 @inject IWikiArticleService WikiService
@@ -11,7 +11,7 @@
 <PageTitle>@(_isNew ? "New Article" : _article?.Title ?? "Article")</PageTitle>
 
 <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
-    <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Href="/wiki" />
+    <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Href="@(_isNew ? "/wiki" : $"/wiki/{Id}")" />
     <MudText Typo="Typo.h5">@(_isNew ? "New Article" : _article?.Title)</MudText>
 </MudStack>
 
@@ -107,7 +107,11 @@ else if (_article is not null)
                             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                                 @if (file.IsBrowserViewable)
                                 {
-                                    <MudLink Href="@("/" + file.Path)" Target="_blank">@file.FileName</MudLink>
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                        <MudLink Href="@("/" + file.Path)" Target="_blank">@file.FileName</MudLink>
+                                        <MudIconButton Icon="@Icons.Material.Filled.Download" Size="Size.Small"
+                                                       Href="@("/" + file.Path)" download="@file.FileName" />
+                                    </MudStack>
                                 }
                                 else
                                 {
@@ -130,7 +134,9 @@ else if (_article is not null)
                 </MudTabPanel>
                 <MudTabPanel Text="Preview">
                     <MudPaper Class="pa-4" Outlined="true">
-                        @MarkdownRenderer.ToMarkup(_article.MarkdownBody)
+                        <div class="wiki-markdown">
+                            @MarkdownRenderer.ToMarkup(_article.MarkdownBody)
+                        </div>
                     </MudPaper>
                 </MudTabPanel>
             </MudTabs>
@@ -145,7 +151,7 @@ else if (_article is not null)
             }
             @(_isNew ? "Create Article" : "Save Changes")
         </MudButton>
-        <MudButton Variant="Variant.Outlined" Href="/wiki">Cancel</MudButton>
+        <MudButton Variant="Variant.Outlined" Href="@(_isNew ? "/wiki" : $"/wiki/{Id}")">Cancel</MudButton>
         @if (!_isNew)
         {
             <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="DeleteAsync">Delete</MudButton>
@@ -306,14 +312,13 @@ else if (_article is not null)
             {
                 await WikiService.CreateAsync(_article);
                 Snackbar.Add("Article created", Severity.Success);
-                Nav.NavigateTo($"/wiki/{_article.Id}");
-                _isNew = false;
             }
             else
             {
                 await WikiService.UpdateAsync(_article);
                 Snackbar.Add("Saved", Severity.Success);
             }
+            Nav.NavigateTo($"/wiki/{_article.Id}");
         }
         catch (Exception)
         {

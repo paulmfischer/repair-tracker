@@ -1,0 +1,186 @@
+@page "/wiki/{Id}"
+@using System.Net
+@using RepairTracker.Client.Services
+@inject IWikiArticleService WikiService
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<PageTitle>@(_article?.Title ?? "Article")</PageTitle>
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Href="/wiki" />
+    <MudText Typo="Typo.h5" Class="flex-grow-1">@_article?.Title</MudText>
+    @if (_article is not null)
+    {
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit"
+                   Href="@($"/wiki/{_article.Id}/edit")">
+            Edit
+        </MudButton>
+        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="DeleteAsync" />
+    }
+</MudStack>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (_notFound)
+{
+    <MudAlert Severity="Severity.Warning">Article not found. It may have been deleted.</MudAlert>
+    <MudButton Variant="Variant.Outlined" Href="/wiki" Class="mt-3">Back to Wiki</MudButton>
+}
+else if (_loadError)
+{
+    <MudAlert Severity="Severity.Error">Couldn't load this article. Check your connection and try again.</MudAlert>
+    <MudButton Variant="Variant.Outlined" OnClick="LoadAsync" Class="mt-3">Try Again</MudButton>
+}
+else if (_article is not null)
+{
+    @if (!string.IsNullOrWhiteSpace(_article.Category) || _article.Tags.Count > 0)
+    {
+        <MudStack Row="true" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap" Spacing="2" Class="mb-4">
+            @if (!string.IsNullOrWhiteSpace(_article.Category))
+            {
+                <MudChip T="string" Icon="@Icons.Material.Filled.Folder" Text="@_article.Category" Variant="Variant.Text" />
+            }
+            @foreach (var tag in _article.Tags)
+            {
+                <MudChip T="string" Text="@tag" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Text" />
+            }
+        </MudStack>
+    }
+
+    <div @ref="_markdownRef" class="wiki-markdown mb-4">
+        @MarkdownRenderer.ToMarkup(_article.MarkdownBody)
+    </div>
+
+    @if (_article.Attachments.Count > 0)
+    {
+        <MudText Typo="Typo.subtitle2" Class="mb-2">Attachments</MudText>
+        <MudList T="string">
+            @foreach (var file in _article.Attachments)
+            {
+                <MudListItem>
+                    @if (file.IsBrowserViewable)
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudLink Href="@("/" + file.Path)" Target="_blank">@file.FileName</MudLink>
+                            <MudIconButton Icon="@Icons.Material.Filled.Download" Size="Size.Small"
+                                           Href="@("/" + file.Path)" download="@file.FileName" />
+                        </MudStack>
+                    }
+                    else
+                    {
+                        <MudLink Href="@("/" + file.Path)" download="@file.FileName">@file.FileName</MudLink>
+                    }
+                </MudListItem>
+            }
+        </MudList>
+    }
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = string.Empty;
+
+    private WikiArticle? _article;
+    private string? _loadedId;
+    private bool _loading = true;
+    private bool _notFound;
+    private bool _loadError;
+
+    private ElementReference _markdownRef;
+    private IJSObjectReference? _jsModule;
+    private DotNetObjectReference<WikiArticleView>? _dotNetRef;
+    private string? _imageHandlerAttachedForId;
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (_loadedId == Id) return Task.CompletedTask;
+        _loadedId = Id;
+        return LoadAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_article is null || _imageHandlerAttachedForId == _article.Id) return;
+
+        _jsModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/wikiImages.js");
+        _dotNetRef ??= DotNetObjectReference.Create(this);
+        await _jsModule.InvokeVoidAsync("attachImageClickHandler", _markdownRef, _dotNetRef);
+        _imageHandlerAttachedForId = _article.Id;
+    }
+
+    [JSInvokable]
+    public Task OnImageClicked(string imagePath) => OpenImagePreview(imagePath);
+
+    private async Task OpenImagePreview(string imagePath)
+    {
+        var parameters = new DialogParameters<ImagePreviewDialog> { { x => x.ImagePath, imagePath } };
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraLarge, CloseButton = true, FullWidth = true };
+        await DialogService.ShowAsync<ImagePreviewDialog>("Image Preview", parameters, options);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _dotNetRef?.Dispose();
+        if (_jsModule is not null)
+        {
+            await _jsModule.DisposeAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _notFound = false;
+        _loadError = false;
+
+        try
+        {
+            _article = await WikiService.GetByIdAsync(Id);
+            if (_article is null)
+            {
+                _notFound = true;
+            }
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            _notFound = true;
+        }
+        catch (Exception)
+        {
+            _loadError = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (_article is null) return;
+
+        var result = await DialogService.ShowMessageBox(
+            "Confirm Delete",
+            $"Delete \"{_article.Title}\"? This cannot be undone.",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await WikiService.DeleteAsync(_article.Id);
+                Snackbar.Add("Article deleted", Severity.Info);
+                Nav.NavigateTo("/wiki");
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("Couldn't delete article. Check your connection and try again.", Severity.Error);
+            }
+        }
+    }
+}
