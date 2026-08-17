@@ -1,0 +1,356 @@
+@page "/wiki/new"
+@page "/wiki/{Id}/edit"
+@using System.Net
+@using RepairTracker.Client.Services
+@inject IWikiArticleService WikiService
+@inject ApiWikiArticleService WikiApi
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>@(_isNew ? "New Article" : _article?.Title ?? "Article")</PageTitle>
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Href="@(_isNew ? "/wiki" : $"/wiki/{Id}")" />
+    <MudText Typo="Typo.h5">@(_isNew ? "New Article" : _article?.Title)</MudText>
+</MudStack>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (_notFound)
+{
+    <MudAlert Severity="Severity.Warning">Article not found. It may have been deleted.</MudAlert>
+    <MudButton Variant="Variant.Outlined" Href="/wiki" Class="mt-3">Back to Wiki</MudButton>
+}
+else if (_loadError)
+{
+    <MudAlert Severity="Severity.Error">Couldn't load this article. Check your connection and try again.</MudAlert>
+    <MudButton Variant="Variant.Outlined" OnClick="LoadAsync" Class="mt-3">Try Again</MudButton>
+}
+else if (_article is not null)
+{
+    <MudGrid>
+        <MudItem xs="12" md="4">
+            <MudTextField @bind-Value="_article.Title" Label="Title" Required="true" Class="mb-3" />
+            <MudAutocomplete T="string" @bind-Value="_article.Category" Label="Category"
+                              HelperText="Slash-delimited path, e.g. Nintendo/Switch. Editing this moves the article in the tree."
+                              SearchFunc="SearchCategories" CoerceText="true" CoerceValue="true" Class="mb-3" />
+
+            <MudText Typo="Typo.body2" Class="mb-1">Tags</MudText>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-1">
+                <MudTextField @bind-Value="_newTag" Label="Add tag" Immediate="true"
+                              OnKeyDown="@(async e => { if (e.Key == "Enter") await AddTagAsync(); })" />
+                <MudIconButton Icon="@Icons.Material.Filled.Add" OnClick="AddTagAsync" />
+            </MudStack>
+            @if (_article.Tags.Count > 0)
+            {
+                <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mb-3">
+                    @foreach (var tag in _article.Tags)
+                    {
+                        <MudChip T="string" Text="@tag" OnClose="@(() => _article.Tags.Remove(tag))" Color="Color.Secondary" Variant="Variant.Text" />
+                    }
+                </MudStack>
+            }
+
+            <MudDivider Class="my-3" />
+
+            <MudText Typo="Typo.subtitle2" Class="mb-2">Images</MudText>
+            <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="OnInsertImageFiles"
+                           Disabled="@_isNew" Accept=".jpg,.jpeg,.png,.gif,.webp">
+                <ActivatorContent>
+                    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Image" Disabled="@_isNew">
+                        Insert Image
+                    </MudButton>
+                </ActivatorContent>
+            </MudFileUpload>
+            @if (_isNew)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">Save the article first to add images.</MudText>
+            }
+            @if (_article.Images.Count > 0)
+            {
+                <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2" Class="mb-3">
+                    @foreach (var image in _article.Images.ToList())
+                    {
+                        <div style="position:relative;">
+                            <img src="/@image.Path" alt="@image.FileName"
+                                 style="height:64px;width:64px;object-fit:cover;border-radius:4px;" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small"
+                                           Color="Color.Error" Variant="Variant.Filled"
+                                           OnClick="@(() => RemoveImageAsync(image))"
+                                           Style="position:absolute;top:-10px;right:-10px;" />
+                        </div>
+                    }
+                </MudStack>
+            }
+
+            <MudText Typo="Typo.subtitle2" Class="mb-2">Attachments</MudText>
+            <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="OnUploadAttachmentFiles" Disabled="@_isNew">
+                <ActivatorContent>
+                    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.AttachFile" Disabled="@_isNew">
+                        Upload Attachment
+                    </MudButton>
+                </ActivatorContent>
+            </MudFileUpload>
+            @if (_isNew)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">Save the article first to add attachments.</MudText>
+            }
+            @if (_article.Attachments.Count > 0)
+            {
+                <MudList T="string" Class="mb-3">
+                    @foreach (var file in _article.Attachments.ToList())
+                    {
+                        <MudListItem>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                @if (file.IsBrowserViewable)
+                                {
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                        <MudLink Href="@("/" + file.Path)" Target="_blank">@file.FileName</MudLink>
+                                        <MudIconButton Icon="@Icons.Material.Filled.Download" Size="Size.Small"
+                                                       Href="@("/" + file.Path)" download="@file.FileName" />
+                                    </MudStack>
+                                }
+                                else
+                                {
+                                    <MudLink Href="@("/" + file.Path)" download="@file.FileName">@file.FileName</MudLink>
+                                }
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                                               Color="Color.Error" OnClick="@(() => RemoveAttachmentAsync(file))" />
+                            </MudStack>
+                        </MudListItem>
+                    }
+                </MudList>
+            }
+        </MudItem>
+
+        <MudItem xs="12" md="8">
+            <MudTabs>
+                <MudTabPanel Text="Write">
+                    <MudTextField @bind-Value="_article.MarkdownBody" Label="Markdown" Lines="20"
+                                  Immediate="true" Style="font-family:monospace;" />
+                </MudTabPanel>
+                <MudTabPanel Text="Preview">
+                    <MudPaper Class="pa-4" Outlined="true">
+                        <div class="wiki-markdown">
+                            @MarkdownRenderer.ToMarkup(_article.MarkdownBody)
+                        </div>
+                    </MudPaper>
+                </MudTabPanel>
+            </MudTabs>
+        </MudItem>
+    </MudGrid>
+
+    <MudStack Row="true" Class="mt-4" Spacing="2">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" Disabled="_saving">
+            @if (_saving)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            @(_isNew ? "Create Article" : "Save Changes")
+        </MudButton>
+        <MudButton Variant="Variant.Outlined" Href="@(_isNew ? "/wiki" : $"/wiki/{Id}")">Cancel</MudButton>
+        @if (!_isNew)
+        {
+            <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="DeleteAsync">Delete</MudButton>
+        }
+    </MudStack>
+}
+
+@code {
+    [Parameter] public string? Id { get; set; }
+
+    private WikiArticle? _article;
+    private List<WikiArticle> _allArticles = [];
+    private bool _loading = true;
+    private bool _notFound;
+    private bool _loadError;
+    private bool _saving;
+    private bool _isNew;
+    private string _newTag = string.Empty;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _notFound = false;
+        _loadError = false;
+
+        try
+        {
+            _allArticles = await WikiService.GetAllAsync();
+
+            if (string.IsNullOrEmpty(Id))
+            {
+                _isNew = true;
+                _article = new WikiArticle();
+            }
+            else
+            {
+                _article = await WikiService.GetByIdAsync(Id);
+                if (_article is null)
+                {
+                    _notFound = true;
+                }
+            }
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            _notFound = true;
+        }
+        catch (Exception)
+        {
+            _loadError = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Task<IEnumerable<string>> SearchCategories(string? search, CancellationToken ct)
+    {
+        IEnumerable<string> categories = _allArticles
+            .Select(a => a.Category)
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Distinct()
+            .Where(c => string.IsNullOrWhiteSpace(search) || c.Contains(search, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(c => c);
+        return Task.FromResult(categories);
+    }
+
+    private Task AddTagAsync()
+    {
+        var tag = _newTag.Trim();
+        if (_article is not null && tag.Length > 0 && !_article.Tags.Contains(tag))
+        {
+            _article.Tags.Add(tag);
+        }
+        _newTag = string.Empty;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnInsertImageFiles(IReadOnlyList<IBrowserFile> files)
+    {
+        if (_article is null || files.Count == 0) return;
+
+        try
+        {
+            var uploaded = await WikiApi.UploadImagesAsync(_article.Id, files);
+            _article.Images.AddRange(uploaded);
+            foreach (var image in uploaded)
+            {
+                _article.MarkdownBody += $"\n\n![{image.FileName}](/{image.Path})\n";
+            }
+            await WikiService.UpdateAsync(_article);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Couldn't upload image(s). Check your connection and try again.", Severity.Error);
+        }
+    }
+
+    private async Task OnUploadAttachmentFiles(IReadOnlyList<IBrowserFile> files)
+    {
+        if (_article is null || files.Count == 0) return;
+
+        try
+        {
+            var uploaded = await WikiApi.UploadAttachmentsAsync(_article.Id, files);
+            _article.Attachments.AddRange(uploaded);
+            await WikiService.UpdateAsync(_article);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Couldn't upload attachment(s). Check your connection and try again.", Severity.Error);
+        }
+    }
+
+    private async Task RemoveImageAsync(WikiFile image)
+    {
+        if (_article is null) return;
+
+        try
+        {
+            await WikiApi.DeleteFileAsync(image.Path);
+            _article.Images.Remove(image);
+            await WikiService.UpdateAsync(_article);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Couldn't remove image. Check your connection and try again.", Severity.Error);
+        }
+    }
+
+    private async Task RemoveAttachmentAsync(WikiFile file)
+    {
+        if (_article is null) return;
+
+        try
+        {
+            await WikiApi.DeleteFileAsync(file.Path);
+            _article.Attachments.Remove(file);
+            await WikiService.UpdateAsync(_article);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Couldn't remove attachment. Check your connection and try again.", Severity.Error);
+        }
+    }
+
+    private async Task Save()
+    {
+        if (_article is null) return;
+        _saving = true;
+
+        try
+        {
+            if (_isNew)
+            {
+                await WikiService.CreateAsync(_article);
+                Snackbar.Add("Article created", Severity.Success);
+            }
+            else
+            {
+                await WikiService.UpdateAsync(_article);
+                Snackbar.Add("Saved", Severity.Success);
+            }
+            Nav.NavigateTo($"/wiki/{_article.Id}");
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Couldn't save changes. Check your connection and try again.", Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (_article is null) return;
+
+        var result = await DialogService.ShowMessageBox(
+            "Confirm Delete",
+            $"Delete \"{_article.Title}\"? This cannot be undone.",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await WikiService.DeleteAsync(_article.Id);
+                Snackbar.Add("Article deleted", Severity.Info);
+                Nav.NavigateTo("/wiki");
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("Couldn't delete article. Check your connection and try again.", Severity.Error);
+            }
+        }
+    }
+}

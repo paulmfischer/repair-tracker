@@ -1,0 +1,184 @@
+@page "/wiki"
+@inject IWikiArticleService WikiService
+@inject NavigationManager Nav
+
+<PageTitle>Wiki</PageTitle>
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h5">Wiki</MudText>
+    <MudSpacer />
+    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add"
+               Href="/wiki/new">
+        New Article
+    </MudButton>
+</MudStack>
+
+<MudPaper Class="mb-4 pa-3" Elevation="0" Outlined="true">
+    <MudTextField @bind-Value="_search" Label="Search" Placeholder="Search by title or tag..." Clearable="true"
+                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                  Immediate="true" />
+    @{ var allTags = _articles.SelectMany(a => a.Tags).Distinct().OrderBy(t => t).ToList(); }
+    @if (allTags.Count > 0)
+    {
+        <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mt-2">
+            @foreach (var tag in allTags)
+            {
+                <MudChip T="string" Text="@tag" Size="Size.Small"
+                         Color="@(tag == _selectedTag ? Color.Primary : Color.Default)"
+                         Variant="@(tag == _selectedTag ? Variant.Filled : Variant.Outlined)"
+                         OnClick="@(() => ToggleTag(tag))" />
+            }
+        </MudStack>
+    }
+</MudPaper>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (_loadError)
+{
+    <MudAlert Severity="Severity.Error">Couldn't load the wiki. Check your connection and try again.</MudAlert>
+    <MudButton Variant="Variant.Outlined" OnClick="LoadAsync" Class="mt-3">Try Again</MudButton>
+}
+else if (_articles.Count == 0)
+{
+    <MudText Typo="Typo.body2" Color="Color.Secondary">No articles yet. Create your first one to get started.</MudText>
+}
+else if (IsFiltering)
+{
+    <MudList T="string">
+        @foreach (var article in FilteredArticles)
+        {
+            <MudListItem OnClick="@(() => Nav.NavigateTo($"/wiki/{article.Id}"))">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Filled.Description" Size="Size.Small" />
+                    <MudStack Spacing="0">
+                        <MudText>@article.Title</MudText>
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                            @(string.IsNullOrWhiteSpace(article.Category) ? "Uncategorized" : article.Category)
+                        </MudText>
+                    </MudStack>
+                </MudStack>
+            </MudListItem>
+        }
+        @if (!FilteredArticles.Any())
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-2">No articles match.</MudText>
+        }
+    </MudList>
+}
+else
+{
+    <MudTreeView T="WikiTreeValue" Items="_tree" Hover="true" ExpandOnClick="true"
+                 SelectedValueChanged="OnTreeValueSelected">
+        <ItemTemplate>
+            <MudTreeViewItem Value="@context.Value" Items="@context.Children" Icon="@context.Icon" Text="@context.Text"
+                              @bind-Expanded="@context.Expanded" />
+        </ItemTemplate>
+    </MudTreeView>
+}
+
+@code {
+    private record WikiTreeValue(bool IsArticle, string Key);
+
+    private List<WikiArticle> _articles = [];
+    private List<TreeItemData<WikiTreeValue>> _tree = [];
+    private bool _loading = true;
+    private bool _loadError;
+    private string _search = string.Empty;
+    private string? _selectedTag;
+
+    private bool IsFiltering => !string.IsNullOrWhiteSpace(_search) || _selectedTag is not null;
+
+    private IEnumerable<WikiArticle> FilteredArticles => _articles
+        .Where(a => string.IsNullOrWhiteSpace(_search) ||
+                    a.Title.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+                    a.Tags.Any(t => t.Contains(_search, StringComparison.OrdinalIgnoreCase)))
+        .Where(a => _selectedTag is null || a.Tags.Contains(_selectedTag));
+
+    private void ToggleTag(string tag) => _selectedTag = _selectedTag == tag ? null : tag;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _loadError = false;
+
+        try
+        {
+            _articles = await WikiService.GetAllAsync();
+            _tree = BuildTree(_articles);
+        }
+        catch (Exception)
+        {
+            _loadError = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    // Builds a virtual folder tree from each article's slash-delimited Category path —
+    // there's no real Folder collection, so "moving" an article is just editing this string.
+    private static List<TreeItemData<WikiTreeValue>> BuildTree(List<WikiArticle> articles)
+    {
+        var root = new List<TreeItemData<WikiTreeValue>>();
+        var folderNodes = new Dictionary<string, TreeItemData<WikiTreeValue>>();
+
+        foreach (var article in articles.OrderBy(a => a.Title, StringComparer.OrdinalIgnoreCase))
+        {
+            var segments = string.IsNullOrWhiteSpace(article.Category)
+                ? ["Uncategorized"]
+                : article.Category.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (segments.Length == 0)
+            {
+                segments = ["Uncategorized"];
+            }
+
+            var currentLevel = root;
+            var pathSoFar = string.Empty;
+            foreach (var segment in segments)
+            {
+                pathSoFar = pathSoFar.Length == 0 ? segment : $"{pathSoFar}/{segment}";
+
+                if (!folderNodes.TryGetValue(pathSoFar, out var folderNode))
+                {
+                    folderNode = new TreeItemData<WikiTreeValue>
+                    {
+                        Text = segment,
+                        Icon = Icons.Material.Filled.Folder,
+                        Value = new WikiTreeValue(false, pathSoFar),
+                        Children = [],
+                        Expanded = currentLevel == root
+                    };
+                    folderNodes[pathSoFar] = folderNode;
+                    currentLevel.Add(folderNode);
+                }
+
+                currentLevel = folderNode.Children!;
+            }
+
+            currentLevel.Add(new TreeItemData<WikiTreeValue>
+            {
+                Text = article.Title,
+                Icon = Icons.Material.Filled.Description,
+                Value = new WikiTreeValue(true, article.Id),
+                Expandable = false
+            });
+        }
+
+        return root;
+    }
+
+    private void OnTreeValueSelected(WikiTreeValue? value)
+    {
+        if (value is { IsArticle: true })
+        {
+            Nav.NavigateTo($"/wiki/{value.Key}");
+        }
+    }
+}

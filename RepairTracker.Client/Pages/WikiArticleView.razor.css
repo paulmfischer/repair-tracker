@@ -1,0 +1,3 @@
+.wiki-markdown ::deep img {
+    cursor: pointer;
+}

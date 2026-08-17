@@ -14,4 +14,5 @@ public class MongoDbContext
 
     public IMongoCollection<Item> Items => _database.GetCollection<Item>("items");
     public IMongoCollection<AppSettings> Settings => _database.GetCollection<AppSettings>("settings");
+    public IMongoCollection<WikiArticle> WikiArticles => _database.GetCollection<WikiArticle>("wiki_articles");
 }
