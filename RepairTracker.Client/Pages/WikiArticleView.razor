@@ -118,7 +118,7 @@ else if (_article is not null)
 
     private async Task OpenImagePreview(string imagePath)
     {
-        var parameters = new DialogParameters<ImagePreviewDialog> { { x => x.ImagePath, imagePath } };
+        var parameters = new DialogParameters<ImagePreviewDialog> { { x => x.ImagePaths, new List<string> { imagePath } } };
         var options = new DialogOptions { MaxWidth = MaxWidth.ExtraLarge, CloseButton = true, FullWidth = true };
         await DialogService.ShowAsync<ImagePreviewDialog>("Image Preview", parameters, options);
     }

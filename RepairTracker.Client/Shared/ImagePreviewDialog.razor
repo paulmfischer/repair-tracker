@@ -1,22 +1,36 @@
 @inject IJSRuntime JS
 
-<MudDialog>
+<MudDialog ContentStyle="overflow:hidden;">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            Image Preview@(ImagePaths.Count > 1 ? $" {_currentIndex + 1}/{ImagePaths.Count}" : "")
+        </MudText>
+    </TitleContent>
     <DialogContent>
-        <div @ref="_containerRef" style="width:100%;height:85vh;position:relative;overflow:hidden;"
-             @onclick="ToggleZoom" @onmousemove="OnMouseMove">
+        <div @ref="_containerRef" tabindex="0" style="@ContainerStyle"
+             @onclick="ToggleZoom" @onmousemove="OnMouseMove" @onkeydown="OnKeyDown">
             @if (_zoomed)
             {
                 <div style="@ZoomedStyle"></div>
             }
             else
             {
-                <img src="/@ImagePath" alt="Note image"
-                     style="max-width:100%;max-height:85vh;display:block;margin:0 auto;object-fit:contain;cursor:zoom-in;" />
+                <img src="/@CurrentImagePath" alt="Note image"
+                     style="@($"max-width:100%;max-height:{MaxImageHeight};display:block;margin:0 auto;object-fit:contain;cursor:zoom-in;")" />
+            }
+            @if (ImagePaths.Count > 1 && !_zoomed)
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" Color="Color.Inherit" Size="Size.Large"
+                               OnClick="Previous"
+                               Style="position:absolute;top:50%;left:8px;transform:translateY(-50%);background-color:rgba(0,0,0,0.4);" />
+                <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Inherit" Size="Size.Large"
+                               OnClick="Next"
+                               Style="position:absolute;top:50%;right:8px;transform:translateY(-50%);background-color:rgba(0,0,0,0.4);" />
             }
         </div>
     </DialogContent>
     <DialogActions>
-        <MudButton Href="@("/" + ImagePath)" Target="_blank" StartIcon="@Icons.Material.Filled.OpenInNew">
+        <MudButton Href="@("/" + CurrentImagePath)" Target="_blank" StartIcon="@Icons.Material.Filled.OpenInNew">
             Open in New Tab
         </MudButton>
         <MudButton OnClick="@(() => MudDialog.Close())">Close</MudButton>
@@ -25,7 +39,8 @@
 
 @code {
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
-    [Parameter, EditorRequired] public string ImagePath { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public List<string> ImagePaths { get; set; } = new();
+    [Parameter] public int StartIndex { get; set; }
 
     private ElementReference _containerRef;
     private IJSObjectReference? _module;
@@ -34,10 +49,35 @@
     private double _containerHeight = 1;
     private double _percentX = 50;
     private double _percentY = 50;
+    private int _currentIndex;
+
+    private string CurrentImagePath => ImagePaths[_currentIndex];
+
+    // Leaves room for the dialog's title bar and action buttons so the image never
+    // forces the dialog itself to scroll — zooming is how a user sees it closer up.
+    private const string MaxImageHeight = "calc(100vh - var(--mud-appbar-height) - 220px)";
+
+    private string ContainerStyle => _zoomed
+        ? $"width:100%;height:{_containerHeight.ToString(System.Globalization.CultureInfo.InvariantCulture)}px;position:relative;overflow:hidden;outline:none;"
+        : $"width:100%;max-height:{MaxImageHeight};position:relative;overflow:hidden;outline:none;";
+
+    protected override void OnInitialized()
+    {
+        _currentIndex = Math.Clamp(StartIndex, 0, Math.Max(0, ImagePaths.Count - 1));
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/imagePreview.js");
+            await _module.InvokeVoidAsync("focusElement", _containerRef);
+        }
+    }
 
     private string ZoomedStyle =>
         $"width:100%;height:100%;cursor:zoom-out;background-repeat:no-repeat;" +
-        $"background-image:url('/{ImagePath}');background-size:200% auto;" +
+        $"background-image:url('/{CurrentImagePath}');background-size:200% auto;" +
         $"background-position:{_percentX.ToString(System.Globalization.CultureInfo.InvariantCulture)}% " +
         $"{_percentY.ToString(System.Globalization.CultureInfo.InvariantCulture)}%;";
 
@@ -60,6 +100,36 @@
         if (!_zoomed) return;
         _percentX = Math.Clamp(e.OffsetX / _containerWidth * 100, 0, 100);
         _percentY = Math.Clamp(e.OffsetY / _containerHeight * 100, 0, 100);
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            MudDialog.Close();
+            return;
+        }
+        if (_zoomed) return;
+        if (e.Key == "ArrowLeft") Previous();
+        else if (e.Key == "ArrowRight") Next();
+    }
+
+    private void Previous()
+    {
+        if (ImagePaths.Count <= 1) return;
+        _currentIndex = (_currentIndex - 1 + ImagePaths.Count) % ImagePaths.Count;
+        _zoomed = false;
+        // TitleContent is rendered by MudDialogInstance, a separate component that only
+        // re-invokes it when explicitly told to — our own re-render doesn't reach it.
+        MudDialog.StateHasChanged();
+    }
+
+    private void Next()
+    {
+        if (ImagePaths.Count <= 1) return;
+        _currentIndex = (_currentIndex + 1) % ImagePaths.Count;
+        _zoomed = false;
+        MudDialog.StateHasChanged();
     }
 
     private sealed record ElementRect(double Width, double Height);

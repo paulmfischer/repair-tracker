@@ -90,7 +90,7 @@
                                                 <div style="position:relative;">
                                                     <img src="/@EditThumbSrc(index)" alt="Note image"
                                                          style="height:80px;width:80px;object-fit:cover;border-radius:4px;cursor:pointer;"
-                                                         @onclick="@(() => OpenImagePreview(_editImagePaths[index]))" />
+                                                         @onclick="@(() => OpenImagePreview(_editImagePaths, index))" />
                                                     <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small"
                                                                    Color="Color.Error" Variant="Variant.Filled"
                                                                    OnClick="@(() => RemoveEditImage(index))"
@@ -164,7 +164,7 @@
                                                 var index = i;
                                                 <img src="/@ThumbSrc(note, index)" alt="Note image"
                                                      style="height:80px;width:80px;object-fit:cover;border-radius:4px;cursor:pointer;"
-                                                     @onclick="@(() => OpenImagePreview(note.ImagePaths[index]))" />
+                                                     @onclick="@(() => OpenImagePreview(note.ImagePaths, index))" />
                                             }
                                         </MudStack>
                                     }
@@ -219,9 +219,13 @@
             ? _editThumbnailPaths[index]
             : _editImagePaths[index];
 
-    private async Task OpenImagePreview(string imagePath)
+    private async Task OpenImagePreview(List<string> imagePaths, int index)
     {
-        var parameters = new DialogParameters<ImagePreviewDialog> { { x => x.ImagePath, imagePath } };
+        var parameters = new DialogParameters<ImagePreviewDialog>
+        {
+            { x => x.ImagePaths, imagePaths },
+            { x => x.StartIndex, index }
+        };
         var options = new DialogOptions { MaxWidth = MaxWidth.ExtraLarge, CloseButton = true, FullWidth = true };
         await DialogService.ShowAsync<ImagePreviewDialog>("Image Preview", parameters, options);
     }
