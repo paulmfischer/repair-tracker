@@ -1,0 +1,102 @@
+/* Styling for rendered wiki markdown (article view and the edit page's Preview tab).
+   Markdig emits plain html elements with no inherent styling, so without this
+   lists collapse to a single flush-left column regardless of nesting, and everything
+   else renders unstyled. */
+
+.wiki-markdown img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+.wiki-markdown ul,
+.wiki-markdown ol {
+    padding-left: 2em;
+    margin: 0 0 16px;
+}
+
+.wiki-markdown ul ul,
+.wiki-markdown ul ol,
+.wiki-markdown ol ul,
+.wiki-markdown ol ol {
+    margin-bottom: 0;
+}
+
+.wiki-markdown li {
+    margin: 4px 0;
+}
+
+.wiki-markdown li > p {
+    margin: 0;
+}
+
+.wiki-markdown h1,
+.wiki-markdown h2,
+.wiki-markdown h3,
+.wiki-markdown h4,
+.wiki-markdown h5,
+.wiki-markdown h6 {
+    margin: 24px 0 8px;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.wiki-markdown h1:first-child,
+.wiki-markdown h2:first-child,
+.wiki-markdown h3:first-child,
+.wiki-markdown h4:first-child,
+.wiki-markdown h5:first-child,
+.wiki-markdown h6:first-child {
+    margin-top: 0;
+}
+
+.wiki-markdown p {
+    margin: 0 0 16px;
+}
+
+.wiki-markdown blockquote {
+    margin: 0 0 16px;
+    padding: 0 1em;
+    border-left: 4px solid var(--mud-palette-lines-default, #e0e0e0);
+    color: var(--mud-palette-text-secondary, #666);
+}
+
+.wiki-markdown pre {
+    margin: 0 0 16px;
+    padding: 12px;
+    overflow-x: auto;
+    background: var(--mud-palette-background-grey, rgba(0, 0, 0, 0.05));
+    border-radius: 4px;
+}
+
+.wiki-markdown code {
+    padding: 2px 4px;
+    background: var(--mud-palette-background-grey, rgba(0, 0, 0, 0.05));
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.wiki-markdown pre code {
+    padding: 0;
+    background: none;
+    border-radius: 0;
+}
+
+.wiki-markdown table {
+    border-collapse: collapse;
+    margin: 0 0 16px;
+    width: 100%;
+}
+
+.wiki-markdown th,
+.wiki-markdown td {
+    border: 1px solid var(--mud-palette-lines-default, #e0e0e0);
+    padding: 6px 12px;
+    text-align: left;
+}
+
+.wiki-markdown hr {
+    margin: 24px 0;
+    border: none;
+    border-top: 1px solid var(--mud-palette-lines-default, #e0e0e0);
+}

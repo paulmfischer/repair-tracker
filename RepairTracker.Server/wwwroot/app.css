@@ -135,11 +135,3 @@ h1:focus {
 .fin-grid .fin-input input {
     text-align: right;
 }
-
-/* Caps oversized images embedded in rendered wiki markdown so they never overflow their
-   container, whether that's the article view or the edit page's Preview tab. */
-.wiki-markdown img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 4px;
-}
