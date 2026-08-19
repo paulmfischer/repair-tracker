@@ -19,12 +19,14 @@ else if (_settings is not null)
 {
     <MudCard>
         <MudCardContent>
-            <MudNumericField @bind-Value="_settings.ResellerFeePercentage"
+            <MudNumericField @ref="_feePercentField" @onfocus="() => SelectAllAsync(_feePercentField)"
+                             @bind-Value="_settings.ResellerFeePercentage"
                              Label="Reseller / Platform Fee %"
                              Min="0m" Max="100m" Step="0.1m" Format="F2"
                              Adornment="Adornment.End" AdornmentText="%"
                              HelperText="Applied when estimating profit in the Calculator and Items views" Class="mb-3" />
-            <MudNumericField @bind-Value="_settings.PerOrderFee"
+            <MudNumericField @ref="_perOrderFeeField" @onfocus="() => SelectAllAsync(_perOrderFeeField)"
+                             @bind-Value="_settings.PerOrderFee"
                              Label="Per-Order Fee"
                              Min="0m" Format="F2"
                              Adornment="Adornment.Start" AdornmentText="$"
@@ -48,6 +50,11 @@ else if (_settings is not null)
     private bool _loading = true;
     private bool _loadError;
     private bool _saving;
+
+    private MudNumericField<decimal> _feePercentField = null!;
+    private MudNumericField<decimal> _perOrderFeeField = null!;
+
+    private static Task SelectAllAsync(MudNumericField<decimal> field) => field.SelectAsync().AsTask();
 
     protected override Task OnInitializedAsync() => LoadAsync();
 

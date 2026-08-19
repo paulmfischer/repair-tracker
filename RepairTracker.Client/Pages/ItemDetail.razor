@@ -84,13 +84,15 @@ else if (_item is not null)
                     <div class="fin-grid mb-4">
                         <MudText Class="fin-label">Purchase Cost</MudText>
                         <div></div>
-                        <MudNumericField @bind-Value="_item.Cost" Class="fin-input"
+                        <MudNumericField @ref="_costField" @onfocus="() => SelectAllAsync(_costField)"
+                                         @bind-Value="_item.Cost" Class="fin-input"
                                          Adornment="Adornment.Start" AdornmentText="$"
                                          Min="0m" Format="F2" />
 
                         <MudText Class="fin-label">Sales Tax</MudText>
                         <div></div>
-                        <MudNumericField @bind-Value="_item.PurchaseTax" Class="fin-input"
+                        <MudNumericField @ref="_purchaseTaxField" @onfocus="() => SelectAllAsync(_purchaseTaxField)"
+                                         @bind-Value="_item.PurchaseTax" Class="fin-input"
                                          Adornment="Adornment.Start" AdornmentText="$"
                                          Min="0m" Format="F2" />
 
@@ -98,13 +100,15 @@ else if (_item is not null)
                         <MudSwitch @bind-Value="_item.PurchaseShippingPaidByMe" Color="Color.Primary">
                             I paid
                         </MudSwitch>
-                        <MudNumericField @bind-Value="_item.PurchaseShipping" Class="fin-input"
+                        <MudNumericField @ref="_purchaseShippingField" @onfocus="() => SelectAllAsync(_purchaseShippingField)"
+                                         @bind-Value="_item.PurchaseShipping" Class="fin-input"
                                          Adornment="Adornment.Start" AdornmentText="$"
                                          Min="0m" Format="F2" />
 
                         <MudText Class="fin-label">Parts Cost</MudText>
                         <div></div>
-                        <MudNumericField @bind-Value="_item.Parts" Class="fin-input"
+                        <MudNumericField @ref="_partsField" @onfocus="() => SelectAllAsync(_partsField)"
+                                         @bind-Value="_item.Parts" Class="fin-input"
                                          Adornment="Adornment.Start" AdornmentText="$"
                                          Min="0m" Format="F2" />
 
@@ -113,7 +117,8 @@ else if (_item is not null)
 
                         <MudText Class="fin-label">Estimated Sell Price</MudText>
                         <div></div>
-                        <MudNumericField @bind-Value="_item.EstimatedSellPrice" Class="fin-input"
+                        <MudNumericField @ref="_estimatedSellPriceField" @onfocus="() => SelectAllAsync(_estimatedSellPriceField)"
+                                         @bind-Value="_item.EstimatedSellPrice" Class="fin-input"
                                          Adornment="Adornment.Start" AdornmentText="$"
                                          Min="0m" Format="F2" />
 
@@ -134,13 +139,15 @@ else if (_item is not null)
 
                         <MudText Class="fin-label">Actual Sell Price</MudText>
                         <div></div>
-                        <MudNumericField @bind-Value="_item.ActualSellPrice" Class="fin-input"
+                        <MudNumericField @ref="_actualSellPriceField" @onfocus="() => SelectAllAsync(_actualSellPriceField)"
+                                         @bind-Value="_item.ActualSellPrice" Class="fin-input"
                                          Adornment="Adornment.Start" AdornmentText="$"
                                          Min="0m" Format="F2" />
 
                         <MudText Class="fin-label">Sales Tax</MudText>
                         <div></div>
-                        <MudNumericField @bind-Value="_item.SalesTax" Class="fin-input"
+                        <MudNumericField @ref="_salesTaxField" @onfocus="() => SelectAllAsync(_salesTaxField)"
+                                         @bind-Value="_item.SalesTax" Class="fin-input"
                                          Adornment="Adornment.Start" AdornmentText="$"
                                          Min="0m" Format="F2" />
 
@@ -152,13 +159,15 @@ else if (_item is not null)
                         <MudSwitch @bind-Value="_item.PostagePaidByMe" Color="Color.Primary">
                             I paid
                         </MudSwitch>
-                        <MudNumericField @bind-Value="_item.Postage" Class="fin-input"
+                        <MudNumericField @ref="_postageField" @onfocus="() => SelectAllAsync(_postageField)"
+                                         @bind-Value="_item.Postage" Class="fin-input"
                                          Adornment="Adornment.Start" AdornmentText="$"
                                          Min="0m" Format="F2" />
 
                         <MudText Class="fin-label">Hours Worked</MudText>
                         <div></div>
-                        <MudNumericField @bind-Value="_item.HoursWorked" Class="fin-input"
+                        <MudNumericField @ref="_hoursWorkedField" @onfocus="() => SelectAllAsync(_hoursWorkedField)"
+                                         @bind-Value="_item.HoursWorked" Class="fin-input"
                                          Min="0m" Format="F1" />
 
                         @if (_item.ActualSellPrice > 0)
@@ -256,6 +265,20 @@ else if (_item is not null)
     private decimal _perOrderFee;
     private bool _infoExpanded;
     private bool _financialsExpanded;
+
+    private MudNumericField<decimal> _costField = null!;
+    private MudNumericField<decimal> _purchaseTaxField = null!;
+    private MudNumericField<decimal> _purchaseShippingField = null!;
+    private MudNumericField<decimal> _partsField = null!;
+    private MudNumericField<decimal> _estimatedSellPriceField = null!;
+    private MudNumericField<decimal> _actualSellPriceField = null!;
+    private MudNumericField<decimal> _salesTaxField = null!;
+    private MudNumericField<decimal> _postageField = null!;
+    private MudNumericField<decimal> _hoursWorkedField = null!;
+
+    // MudNumericField selects on focus rather than leaving the cursor at 0.00, since that
+    // forced clearing the field first before typing a real value.
+    private static Task SelectAllAsync(MudNumericField<decimal> field) => field.SelectAsync().AsTask();
 
     private static string? ValidateWarrantyStickerNumber(string value) =>
         !string.IsNullOrEmpty(value) && !value.All(char.IsDigit)

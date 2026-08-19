@@ -20,18 +20,21 @@ else if (_settings is not null)
         <MudItem xs="12" md="6">
             <MudCard>
                 <MudCardContent>
-                    <MudNumericField @bind-Value="_cost" @bind-Value:after="Recalculate"
+                    <MudNumericField @ref="_costField" @onfocus="() => SelectAllAsync(_costField)"
+                                     @bind-Value="_cost" @bind-Value:after="Recalculate"
                                      Label="Purchase Cost"
                                      Adornment="Adornment.Start" AdornmentText="$"
-                                     Min="0m" Format="F2" Immediate="true" />
-                    <MudNumericField @bind-Value="_parts" @bind-Value:after="Recalculate"
+                                     Min="0m" Format="F2" />
+                    <MudNumericField @ref="_partsField" @onfocus="() => SelectAllAsync(_partsField)"
+                                     @bind-Value="_parts" @bind-Value:after="Recalculate"
                                      Label="Parts Cost"
                                      Adornment="Adornment.Start" AdornmentText="$"
-                                     Min="0m" Format="F2" Immediate="true" Class="mt-3" />
-                    <MudNumericField @bind-Value="_estimatedSellPrice" @bind-Value:after="Recalculate"
+                                     Min="0m" Format="F2" Class="mt-3" />
+                    <MudNumericField @ref="_estimatedSellPriceField" @onfocus="() => SelectAllAsync(_estimatedSellPriceField)"
+                                     @bind-Value="_estimatedSellPrice" @bind-Value:after="Recalculate"
                                      Label="Estimated Sell Price"
                                      Adornment="Adornment.Start" AdornmentText="$"
-                                     Min="0m" Format="F2" Immediate="true" Class="mt-3" />
+                                     Min="0m" Format="F2" Class="mt-3" />
                     <MudText Typo="Typo.caption" Class="mt-2 mud-text-secondary">
                         Using reseller fee: @_settings.ResellerFeePercentage%
                     </MudText>
@@ -81,6 +84,12 @@ else if (_settings is not null)
     private decimal _resellerFee;
     private decimal _totalCosts;
     private decimal _grossProfit;
+
+    private MudNumericField<decimal> _costField = null!;
+    private MudNumericField<decimal> _partsField = null!;
+    private MudNumericField<decimal> _estimatedSellPriceField = null!;
+
+    private static Task SelectAllAsync(MudNumericField<decimal> field) => field.SelectAsync().AsTask();
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
