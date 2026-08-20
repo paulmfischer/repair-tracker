@@ -17,6 +17,7 @@
         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-1">
             <MudFileUpload T="IReadOnlyList<IBrowserFile>"
                            FilesChanged="OnNewNoteFilesChanged"
+                           MaximumFileCount="MaxUploadBatchSize"
                            Disabled="@(!Connectivity.IsOnline)"
                            Accept=".jpg,.jpeg,.png,.gif,.webp">
                 <ActivatorContent>
@@ -41,6 +42,12 @@
                 }
             </MudStack>
         }
+        @if (_newNoteFiles.Count > MaxImagesPerNote)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Error" Class="mb-2">
+                Only @MaxImagesPerNote images are allowed per note. Remove @(_newNoteFiles.Count - MaxImagesPerNote) to continue.
+            </MudText>
+        }
         @if (IsNew)
         {
             <MudText Typo="Typo.body2" Color="Color.Secondary">
@@ -50,7 +57,7 @@
         else
         {
             <MudButton Variant="Variant.Filled" Color="Color.Secondary"
-                       OnClick="AddNote" Disabled="@(_addingNote || (string.IsNullOrWhiteSpace(_newNoteText) && _newNoteFiles.Count == 0))">
+                       OnClick="AddNote" Disabled="@(_addingNote || _newNoteFiles.Count > MaxImagesPerNote || (string.IsNullOrWhiteSpace(_newNoteText) && _newNoteFiles.Count == 0))">
                 @if (_addingNote)
                 {
                     <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
@@ -101,6 +108,7 @@
                                     }
                                     <MudFileUpload T="IReadOnlyList<IBrowserFile>"
                                                    FilesChanged="OnEditNoteFilesChanged"
+                                                   MaximumFileCount="MaxUploadBatchSize"
                                                    Disabled="@(!Connectivity.IsOnline)"
                                                    Accept=".jpg,.jpeg,.png,.gif,.webp">
                                         <ActivatorContent>
@@ -124,10 +132,16 @@
                                             }
                                         </MudStack>
                                     }
+                                    @if (_editImagePaths.Count + _editNewFiles.Count > MaxImagesPerNote)
+                                    {
+                                        <MudText Typo="Typo.body2" Color="Color.Error">
+                                            Only @MaxImagesPerNote images are allowed per note. Remove @(_editImagePaths.Count + _editNewFiles.Count - MaxImagesPerNote) to continue.
+                                        </MudText>
+                                    }
                                     <MudStack Row="true" Spacing="2">
                                         <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                                    OnClick="@(() => SaveEditNote(note))"
-                                                   Disabled="@(_savingEdit || (string.IsNullOrWhiteSpace(_editNoteText) && _editImagePaths.Count == 0 && _editNewFiles.Count == 0))">
+                                                   Disabled="@(_savingEdit || _editImagePaths.Count + _editNewFiles.Count > MaxImagesPerNote || (string.IsNullOrWhiteSpace(_editNoteText) && _editImagePaths.Count == 0 && _editNewFiles.Count == 0))">
                                             @if (_savingEdit)
                                             {
                                                 <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
@@ -196,6 +210,13 @@
     private void OnConnectivityChanged(bool isOnline) => InvokeAsync(StateHasChanged);
 
     public void Dispose() => Connectivity.OnlineStatusChanged -= OnConnectivityChanged;
+
+    // MudFileUpload's own MaximumFileCount would otherwise silently throw (and abort the
+    // selection with no UI feedback) once a single picker selection exceeds it, so it's set
+    // above the real per-note limit; MaxImagesPerNote is enforced in the UI instead (warning
+    // text + disabled Add/Save) so users can see and fix an over-limit selection.
+    private const int MaxUploadBatchSize = 50;
+    private const int MaxImagesPerNote = 10;
 
     private string _newNoteText = string.Empty;
     private List<IBrowserFile> _newNoteFiles = new();
