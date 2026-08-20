@@ -1,12 +1,15 @@
 @page "/wiki/new"
 @page "/wiki/{Id}/edit"
 @using System.Net
+@using System.Text.RegularExpressions
 @using RepairTracker.Client.Services
+@implements IAsyncDisposable
 @inject IWikiArticleService WikiService
 @inject ApiWikiArticleService WikiApi
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject IJSRuntime JS
 
 <PageTitle>@(_isNew ? "New Article" : _article?.Title ?? "Article")</PageTitle>
 
@@ -178,6 +181,18 @@ else if (_article is not null)
     private bool _isNew;
     private string _newTag = string.Empty;
     private ImageInsertSize _insertSize = ImageInsertSize.Medium;
+    private IJSObjectReference? _jsModule;
+
+    private async Task<IJSObjectReference> GetJsModuleAsync() =>
+        _jsModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/wikiFileCache.js");
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_jsModule is not null)
+        {
+            await _jsModule.DisposeAsync();
+        }
+    }
 
     private enum ImageInsertSize
     {
@@ -302,13 +317,25 @@ else if (_article is not null)
         try
         {
             await WikiApi.DeleteFileAsync(image.Path);
+            var module = await GetJsModuleAsync();
+            await module.InvokeVoidAsync("evictFromCache", $"/{image.Path}");
             _article.Images.Remove(image);
+            _article.MarkdownBody = RemoveImageReferences(_article.MarkdownBody, image.Path);
             await WikiService.UpdateAsync(_article);
         }
         catch (Exception)
         {
             Snackbar.Add("Couldn't remove image. Check your connection and try again.", Severity.Error);
         }
+    }
+
+    // Strips `![alt](/path){attrs}` references to a deleted image from the markdown body,
+    // matching the exact insertion format OnInsertImageFiles writes.
+    private static string RemoveImageReferences(string markdown, string path)
+    {
+        var pattern = $@"!\[[^\]]*\]\(/{Regex.Escape(path)}\)(\{{[^}}]*\}})?";
+        var result = Regex.Replace(markdown, pattern, string.Empty);
+        return Regex.Replace(result, @"\n{3,}", "\n\n");
     }
 
     private async Task RemoveAttachmentAsync(WikiFile file)
@@ -318,6 +345,8 @@ else if (_article is not null)
         try
         {
             await WikiApi.DeleteFileAsync(file.Path);
+            var module = await GetJsModuleAsync();
+            await module.InvokeVoidAsync("evictFromCache", $"/{file.Path}");
             _article.Attachments.Remove(file);
             await WikiService.UpdateAsync(_article);
         }

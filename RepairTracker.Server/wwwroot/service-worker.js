@@ -1,5 +1,5 @@
 // Bump this whenever the caching strategy changes, to drop stale caches on activate.
-const CACHE_NAME = 'repair-tracker-v2';
+const CACHE_NAME = 'repair-tracker-v3';
 
 // There's no static index.html to precache (this is a server-rendered Blazor Web App
 // host page, not a standalone WASM app) - so instead of precaching a fixed asset list,
