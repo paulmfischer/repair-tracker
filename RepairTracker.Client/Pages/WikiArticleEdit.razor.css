@@ -1,0 +1,44 @@
+.wiki-image-thumb {
+    position: relative;
+    width: 88px;
+    height: 88px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--mud-palette-lines-default, #e0e0e0);
+    background: var(--mud-palette-background-grey, rgba(0, 0, 0, 0.05));
+    box-shadow: var(--mud-elevation-1, 0 1px 3px rgba(0, 0, 0, 0.15));
+}
+
+.wiki-image-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* MudIconButton renders its own <button> inside MudIconButton's template, so it needs
+   ::deep to be reached from this component's scoped stylesheet. */
+.wiki-image-thumb ::deep .wiki-image-thumb-remove {
+    position: absolute !important;
+    top: 2px;
+    right: 2px;
+    padding: 2px !important;
+}
+
+/* MudTabs/MudTextField/MudPaper all render their own markup in their own components, so
+   reaching the actual <textarea>/<div class="mud-paper"> requires a real wrapping element
+   (this div, authored directly in this file) plus ::deep. */
+.wiki-editor-tabs ::deep textarea {
+    font-family: monospace;
+    resize: vertical;
+    height: calc(100vh - 380px) !important;
+    min-height: 320px;
+    box-sizing: border-box;
+}
+
+.wiki-editor-tabs ::deep .mud-paper {
+    height: calc(100vh - 380px);
+    min-height: 320px;
+    overflow-y: auto;
+    box-sizing: border-box;
+}

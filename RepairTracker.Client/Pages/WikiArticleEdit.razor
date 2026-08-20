@@ -57,6 +57,12 @@ else if (_article is not null)
             <MudDivider Class="my-3" />
 
             <MudText Typo="Typo.subtitle2" Class="mb-2">Images</MudText>
+            <MudSelect T="ImageInsertSize" @bind-Value="_insertSize" Label="Insert size" Dense="true" Class="mb-2">
+                @foreach (var size in Enum.GetValues<ImageInsertSize>())
+                {
+                    <MudSelectItem Value="@size">@size</MudSelectItem>
+                }
+            </MudSelect>
             <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="OnInsertImageFiles"
                            Disabled="@_isNew" Accept=".jpg,.jpeg,.png,.gif,.webp">
                 <ActivatorContent>
@@ -71,16 +77,15 @@ else if (_article is not null)
             }
             @if (_article.Images.Count > 0)
             {
-                <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2" Class="mb-3">
+                <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="3" Class="mt-3 mb-3">
                     @foreach (var image in _article.Images.ToList())
                     {
-                        <div style="position:relative;">
-                            <img src="/@image.Path" alt="@image.FileName"
-                                 style="height:64px;width:64px;object-fit:cover;border-radius:4px;" />
+                        <div class="wiki-image-thumb">
+                            <img src="/@image.Path" alt="@image.FileName" />
                             <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small"
                                            Color="Color.Error" Variant="Variant.Filled"
                                            OnClick="@(() => RemoveImageAsync(image))"
-                                           Style="position:absolute;top:-10px;right:-10px;" />
+                                           Class="wiki-image-thumb-remove" />
                         </div>
                     }
                 </MudStack>
@@ -126,20 +131,22 @@ else if (_article is not null)
             }
         </MudItem>
 
-        <MudItem xs="12" md="8">
-            <MudTabs>
-                <MudTabPanel Text="Write">
-                    <MudTextField @bind-Value="_article.MarkdownBody" Label="Markdown" Lines="20"
-                                  Immediate="true" Style="font-family:monospace;" />
-                </MudTabPanel>
-                <MudTabPanel Text="Preview">
-                    <MudPaper Class="pa-4" Outlined="true">
-                        <div class="wiki-markdown">
-                            @MarkdownRenderer.ToMarkup(_article.MarkdownBody)
-                        </div>
-                    </MudPaper>
-                </MudTabPanel>
-            </MudTabs>
+        <MudItem xs="12" md="8" Class="wiki-editor-column">
+            <div class="wiki-editor-tabs">
+                <MudTabs>
+                    <MudTabPanel Text="Write">
+                        <MudTextField @bind-Value="_article.MarkdownBody" Label="Markdown" Lines="20"
+                                      Immediate="true" />
+                    </MudTabPanel>
+                    <MudTabPanel Text="Preview">
+                        <MudPaper Class="pa-4" Outlined="true">
+                            <div class="wiki-markdown">
+                                @MarkdownRenderer.ToMarkup(_article.MarkdownBody)
+                            </div>
+                        </MudPaper>
+                    </MudTabPanel>
+                </MudTabs>
+            </div>
         </MudItem>
     </MudGrid>
 
@@ -170,6 +177,23 @@ else if (_article is not null)
     private bool _saving;
     private bool _isNew;
     private string _newTag = string.Empty;
+    private ImageInsertSize _insertSize = ImageInsertSize.Medium;
+
+    private enum ImageInsertSize
+    {
+        Small,
+        Medium,
+        Large,
+        Original
+    }
+
+    private static int? PixelWidthFor(ImageInsertSize size) => size switch
+    {
+        ImageInsertSize.Small => 150,
+        ImageInsertSize.Medium => 300,
+        ImageInsertSize.Large => 600,
+        _ => null
+    };
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
@@ -241,9 +265,11 @@ else if (_article is not null)
         {
             var uploaded = await WikiApi.UploadImagesAsync(_article.Id, files);
             _article.Images.AddRange(uploaded);
+            var width = PixelWidthFor(_insertSize);
+            var attribute = width is null ? string.Empty : $"{{width={width}}}";
             foreach (var image in uploaded)
             {
-                _article.MarkdownBody += $"\n\n![{image.FileName}](/{image.Path})\n";
+                _article.MarkdownBody += $"\n\n![{image.FileName}](/{image.Path}){attribute}\n";
             }
             await WikiService.UpdateAsync(_article);
         }

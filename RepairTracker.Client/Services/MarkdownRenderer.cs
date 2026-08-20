@@ -10,6 +10,7 @@ public static class MarkdownRenderer
 {
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
+        .UseSoftlineBreakAsHardlineBreak()
         .Build();
 
     public static MarkupString ToMarkup(string? markdown) =>
