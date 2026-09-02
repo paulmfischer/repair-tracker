@@ -16,8 +16,15 @@ public class ItemService : IItemService
         _logger = logger;
     }
 
-    public async Task<List<Item>> GetAllAsync() =>
-        await _db.Items.Find(_ => true).SortByDescending(i => i.CreatedAt).ToListAsync();
+    public async Task<List<Item>> GetAllAsync()
+    {
+        var items = await _db.Items.Find(_ => true).SortByDescending(i => i.CreatedAt).ToListAsync();
+        foreach (var item in items)
+        {
+            MigrateLegacyParts(item);
+        }
+        return items;
+    }
 
     public async Task<Item?> GetByIdAsync(string id)
     {
@@ -25,8 +32,40 @@ public class ItemService : IItemService
         if (item is null)
         {
             _logger.LogWarning("Item {ItemId} not found", id);
+            return null;
         }
+
+        // Persist the migration now, while the item happens to be loaded, rather than on every
+        // GetAllAsync call — bypasses ReplaceOneAsync via UpdateAsync so opening an item doesn't
+        // bump UpdatedAt or re-run ClearRepairOnlyFields as a side effect of just viewing it.
+        if (MigrateLegacyParts(item))
+        {
+            await _db.Items.ReplaceOneAsync(i => i.Id == item.Id, item);
+        }
+
         return item;
+    }
+
+    // Old documents stored a flat "Parts" decimal, now deserialized into LegacyPartsCost via its
+    // BsonElement mapping since Parts itself became a computed rollup of PartsList. Folds that
+    // value into a single PartsList entry the first time the item is loaded, so nothing is lost.
+    private static bool MigrateLegacyParts(Item item)
+    {
+        if (item.LegacyPartsCost is not > 0 || item.PartsList.Count > 0)
+        {
+            item.LegacyPartsCost = null;
+            return false;
+        }
+
+        item.PartsList.Add(new PartLineItem
+        {
+            Name = "Existing parts cost",
+            Quantity = 1,
+            UnitCost = item.LegacyPartsCost.Value,
+            Source = PartSource.Other
+        });
+        item.LegacyPartsCost = null;
+        return true;
     }
 
     public async Task CreateAsync(Item item)
@@ -69,7 +108,6 @@ public class ItemService : IItemService
 
         item.Cost = 0;
         item.PurchaseTax = 0;
-        item.Parts = 0;
         item.PurchaseShipping = 0;
         item.PurchaseShippingPaidByMe = true;
         item.EstimatedSellPrice = 0;

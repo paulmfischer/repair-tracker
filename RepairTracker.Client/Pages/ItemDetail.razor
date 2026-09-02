@@ -107,10 +107,9 @@ else if (_item is not null)
 
                         <MudText Class="fin-label">Parts Cost</MudText>
                         <div></div>
-                        <MudNumericField @ref="_partsField" @onfocus="() => SelectAllAsync(_partsField)"
-                                         @bind-Value="_item.Parts" Class="fin-input"
-                                         Adornment="Adornment.Start" AdornmentText="$"
-                                         Min="0m" Format="F2" />
+                        <div class="fin-value">
+                            <span>$</span><span>@_item.Parts.ToString("F2")</span>
+                        </div>
 
                         <MudDivider Class="fin-full my-2" />
                         <MudText Typo="Typo.subtitle2" Class="fin-full">Estimated (using @_feePercent% fee)</MudText>
@@ -208,6 +207,87 @@ else if (_item is not null)
         </MudItem>
 
         <MudItem xs="12" md="8">
+            <MudExpansionPanels Class="mb-4">
+                <MudExpansionPanel @bind-Expanded="_partsExpanded">
+                    <TitleContent>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%">
+                            <MudText Typo="Typo.h6">Parts</MudText>
+                            @{ var partCount = _item.PartsList.Sum(p => p.Quantity); }
+                            @if (partCount > 0)
+                            {
+                                <MudText Typo="Typo.body2" Class="mud-text-secondary mr-4">
+                                    @partCount part@(partCount == 1 ? "" : "s") &middot; $@_item.Parts.ToString("F2")
+                                </MudText>
+                            }
+                        </MudStack>
+                    </TitleContent>
+                    <ChildContent>
+                    @if (_item.PartsList.Count > 0)
+                    {
+                        <MudSimpleTable Dense="true" Class="mb-2">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Qty</th>
+                                    <th>Unit Cost</th>
+                                    <th>Source</th>
+                                    <th class="text-right">Total</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var part in _item.PartsList)
+                                {
+                                    <tr>
+                                        <td><MudTextField T="string" @bind-Value="part.Name" Placeholder="Part name" /></td>
+                                        <td>
+                                            <MudNumericField T="int" @bind-Value="part.Quantity" Min="1" Style="width:70px" />
+                                        </td>
+                                        <td>
+                                            <MudNumericField T="decimal" @bind-Value="part.UnitCost"
+                                                              Adornment="Adornment.Start" AdornmentText="$"
+                                                              Min="0m" Format="F2" Style="width:110px" />
+                                        </td>
+                                        <td>
+                                            <MudSelect T="PartSource" @bind-Value="part.Source" Style="width:150px">
+                                                @foreach (var src in Enum.GetValues<PartSource>())
+                                                {
+                                                    <MudSelectItem Value="src">@src.ToDisplayString()</MudSelectItem>
+                                                }
+                                            </MudSelect>
+                                        </td>
+                                        <td class="text-right">
+                                            <span style="display:inline-flex; align-items:center; gap:4px;">
+                                                $@part.LineTotal.ToString("F2")
+                                                @if (part.IsFree && part.UnitCost > 0)
+                                                {
+                                                    <MudTooltip Text="Free part — unit cost tracked for reference only, not counted toward parts total">
+                                                        <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="mud-text-secondary" />
+                                                    </MudTooltip>
+                                                }
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                                                           title="Remove part" aria-label="Remove part"
+                                                           OnClick="@(() => _item.PartsList.Remove(part))" />
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary mb-2">No parts added yet.</MudText>
+                    }
+                    <MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="@(() => _item.PartsList.Add(new PartLineItem()))">
+                        Add Part
+                    </MudButton>
+                    </ChildContent>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+
             <RepairLog @ref="_repairLog" Item="_item" IsNew="_isNew" />
         </MudItem>
     </MudGrid>
@@ -252,7 +332,6 @@ else if (_item is not null)
 @code {
     [Parameter] public string? Id { get; set; }
     [SupplyParameterFromQuery] public decimal Cost { get; set; }
-    [SupplyParameterFromQuery] public decimal Parts { get; set; }
     [SupplyParameterFromQuery] public decimal EstimatedSellPrice { get; set; }
 
     private Item? _item;
@@ -265,11 +344,11 @@ else if (_item is not null)
     private decimal _perOrderFee;
     private bool _infoExpanded;
     private bool _financialsExpanded;
+    private bool _partsExpanded = true;
 
     private MudNumericField<decimal> _costField = null!;
     private MudNumericField<decimal> _purchaseTaxField = null!;
     private MudNumericField<decimal> _purchaseShippingField = null!;
-    private MudNumericField<decimal> _partsField = null!;
     private MudNumericField<decimal> _estimatedSellPriceField = null!;
     private MudNumericField<decimal> _actualSellPriceField = null!;
     private MudNumericField<decimal> _salesTaxField = null!;
@@ -332,7 +411,6 @@ else if (_item is not null)
                 _item = new Item
                 {
                     Cost = Cost,
-                    Parts = Parts,
                     EstimatedSellPrice = EstimatedSellPrice
                 };
             }

@@ -3,6 +3,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace RepairTracker.Models;
 
+[BsonIgnoreExtraElements]
 public class Item
 {
     [BsonId]
@@ -25,7 +26,17 @@ public class Item
 
     public decimal Cost { get; set; }
     public decimal PurchaseTax { get; set; }
-    public decimal Parts { get; set; }
+    public List<PartLineItem> PartsList { get; set; } = new();
+
+    // Only populated by deserializing an old document's raw "Parts" element, so ItemService can
+    // migrate it into a PartsList entry the first time the item is loaded. Never written back.
+    [BsonElement("Parts")]
+    [BsonIgnoreIfDefault]
+    public decimal? LegacyPartsCost { get; set; }
+
+    [BsonIgnore]
+    public decimal Parts => PartsList.Sum(p => p.LineTotal);
+
     public decimal PurchaseShipping { get; set; }
     public bool PurchaseShippingPaidByMe { get; set; } = true;
     public decimal EstimatedSellPrice { get; set; }
