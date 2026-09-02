@@ -17,6 +17,11 @@ public static class ReportEndpoints
             }
             logger.LogInformation("Report generated for item {ItemId}", id);
             return Results.File(pdfBytes, "application/pdf", $"report-{id}.pdf");
-        });
+        })
+            .WithTags("Reports")
+            .WithSummary("Get an item's PDF report")
+            .WithDescription("Generates and returns a PDF summary of an item's repair history.")
+            .Produces(StatusCodes.Status200OK, contentType: "application/pdf")
+            .Produces(StatusCodes.Status404NotFound);
     }
 }

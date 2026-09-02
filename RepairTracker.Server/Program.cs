@@ -36,6 +36,23 @@ builder.Host.UseSerilog((context, services, loggerConfig) =>
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
+// Defaults to enabled in every environment; set Swagger:Enabled to false in config to turn it off
+// (e.g. for a locked-down production deployment).
+var swaggerEnabled = builder.Configuration.GetValue("Swagger:Enabled", true);
+if (swaggerEnabled)
+{
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(options =>
+    {
+        options.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo
+        {
+            Title = "Repair Tracker API",
+            Version = "v1",
+            Description = "HTTP endpoints backing the Repair Tracker WASM client's item, settings, image, report, and wiki features."
+        });
+    });
+}
+
 var mongoConnectionString = builder.Configuration.GetConnectionString("MongoDB") ?? "mongodb://localhost:27017";
 var databaseName = builder.Configuration["MongoDB:Database"] ?? "RepairTracker";
 builder.Services.AddSingleton<IMongoClient>(_ => new MongoClient(mongoConnectionString));
@@ -85,6 +102,15 @@ if (app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseAntiforgery();
 
+if (swaggerEnabled)
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Repair Tracker API v1");
+    });
+}
+
 // Served from outside wwwroot (see UploadsPath), and always via plain UseStaticFiles rather
 // than MapStaticAssets, since these files are written at runtime and have no build-time manifest entry.
 var uploadsRoot = UploadsPath.GetRoot(app.Environment, app.Configuration);
@@ -110,7 +136,11 @@ app.MapWikiFilesEndpoints();
 // Cheap, DB-free reachability probe: DevTools' offline emulation doesn't reliably flip
 // navigator.onLine (only real hardware disconnects reliably do), so ConnectivityService uses
 // an actual round trip to this endpoint to determine connectivity instead.
-app.MapGet("/api/ping", () => Results.Ok());
+app.MapGet("/api/ping", () => Results.Ok())
+    .WithTags("Ping")
+    .WithSummary("Reachability probe")
+    .WithDescription("Cheap, DB-free endpoint used by ConnectivityService to detect real network connectivity.")
+    .Produces(StatusCodes.Status200OK);
 
 try
 {

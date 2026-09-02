@@ -12,7 +12,12 @@ public static class WikiFilesEndpoints
             var result = await SaveFilesAsync(articleId, "images", files, env, config);
             logger.LogInformation("Uploaded {FileCount} wiki image(s) for article {ArticleId}", result.Count, articleId);
             return Results.Ok(result);
-        }).DisableAntiforgery();
+        })
+            .WithTags("Wiki Files")
+            .WithSummary("Upload wiki images")
+            .WithDescription("Saves one or more images for a wiki article and returns their stored file info, including relative paths under /uploads.")
+            .Produces<List<WikiFile>>()
+            .DisableAntiforgery();
 
         app.MapPost("/api/wiki/{articleId}/attachments", async (
             string articleId, IFormFileCollection files, IWebHostEnvironment env, IConfiguration config, ILogger<Program> logger) =>
@@ -20,7 +25,12 @@ public static class WikiFilesEndpoints
             var result = await SaveFilesAsync(articleId, "attachments", files, env, config);
             logger.LogInformation("Uploaded {FileCount} wiki attachment(s) for article {ArticleId}", result.Count, articleId);
             return Results.Ok(result);
-        }).DisableAntiforgery();
+        })
+            .WithTags("Wiki Files")
+            .WithSummary("Upload wiki attachments")
+            .WithDescription("Saves one or more non-image attachments for a wiki article and returns their stored file info, including relative paths under /uploads.")
+            .Produces<List<WikiFile>>()
+            .DisableAntiforgery();
 
         app.MapDelete("/api/wiki/files", (string path, IWebHostEnvironment env, IConfiguration config, ILogger<Program> logger) =>
         {
@@ -40,7 +50,12 @@ public static class WikiFilesEndpoints
             }
 
             return Results.NoContent();
-        });
+        })
+            .WithTags("Wiki Files")
+            .WithSummary("Delete a wiki file")
+            .WithDescription("Deletes an uploaded wiki image or attachment by its /uploads-relative path. Rejects paths that resolve outside the uploads root.")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status400BadRequest);
     }
 
     private static async Task<List<WikiFile>> SaveFilesAsync(

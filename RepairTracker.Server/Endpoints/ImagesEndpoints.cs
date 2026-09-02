@@ -34,7 +34,12 @@ public static class ImagesEndpoints
 
             logger.LogInformation("Uploaded {FileCount} image(s) for item {ItemId}, note {NoteId}", paths.Count, itemId, noteId);
             return Results.Ok(new ImageUploadResult(paths, thumbPaths));
-        }).DisableAntiforgery();
+        })
+            .WithTags("Images")
+            .WithSummary("Upload note images")
+            .WithDescription("Saves one or more images for a repair note, generating a thumbnail for each, and returns their relative paths under /uploads.")
+            .Produces<ImageUploadResult>()
+            .DisableAntiforgery();
 
         app.MapDelete("/api/images", (string path, IWebHostEnvironment env, IConfiguration config, ILogger<Program> logger) =>
         {
@@ -62,7 +67,12 @@ public static class ImagesEndpoints
             }
 
             return Results.NoContent();
-        });
+        })
+            .WithTags("Images")
+            .WithSummary("Delete a note image")
+            .WithDescription("Deletes an uploaded note image (and its sibling thumbnail, if any) by its /uploads-relative path. Rejects paths that resolve outside the uploads root.")
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status400BadRequest);
 
         app.MapPost("/api/images/backfill-thumbnails", async (
             ItemService itemService, IWebHostEnvironment env, IConfiguration config) =>
@@ -117,7 +127,10 @@ public static class ImagesEndpoints
             }
 
             return Results.Ok(new { itemsUpdated, notesUpdated, thumbnailsGenerated, failures });
-        });
+        })
+            .WithTags("Images")
+            .WithSummary("Backfill missing thumbnails")
+            .WithDescription("One-off maintenance endpoint: generates thumbnails for any existing note images that predate thumbnail support.");
     }
 
     private static void DeleteIfInsideUploadsRoot(string relativeOrPrefixedPath, string uploadsRoot)
