@@ -12,4 +12,10 @@ public static class UploadsPath
     // outside the uploads root (e.g. via "../" segments).
     public static bool IsInsideRoot(string fullPath, string uploadsRoot) =>
         fullPath.StartsWith(Path.GetFullPath(uploadsRoot), StringComparison.Ordinal);
+
+    // Also drives Kestrel's MaxRequestBodySize and the multipart form parser's length limit in
+    // Program.cs, and is surfaced to the WASM client via GET /api/wiki/upload-limit so the
+    // client-side OpenReadStream cap in ApiWikiArticleService stays in sync without a rebuild.
+    public static long GetMaxFileSizeBytes(IConfiguration config) =>
+        config.GetValue("Uploads:MaxFileSizeMb", 200) * 1024L * 1024L;
 }

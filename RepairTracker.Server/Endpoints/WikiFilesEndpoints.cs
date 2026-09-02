@@ -6,6 +6,13 @@ public static class WikiFilesEndpoints
 {
     public static void MapWikiFilesEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapGet("/api/wiki/upload-limit", (IConfiguration config) =>
+            Results.Ok(new { MaxFileSizeBytes = UploadsPath.GetMaxFileSizeBytes(config) }))
+            .WithTags("Wiki Files")
+            .WithSummary("Get the configured upload size limit")
+            .WithDescription("Returns the max file size (bytes) the server currently accepts for wiki uploads, driven by Uploads:MaxFileSizeMb, so the client can enforce the same cap.")
+            .Produces<object>();
+
         app.MapPost("/api/wiki/{articleId}/images", async (
             string articleId, IFormFileCollection files, IWebHostEnvironment env, IConfiguration config, ILogger<Program> logger) =>
         {

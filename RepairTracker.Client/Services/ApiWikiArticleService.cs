@@ -8,6 +8,24 @@ namespace RepairTracker.Client.Services;
 
 public class ApiWikiArticleService(HttpClient http) : IWikiArticleService
 {
+    // Cached for the lifetime of the app/tab; the server's Uploads:MaxFileSizeMb rarely changes,
+    // and re-fetching on every upload would add a round trip for no benefit.
+    private long? _maxUploadSizeBytes;
+
+    private async Task<long> GetMaxUploadSizeBytesAsync()
+    {
+        if (_maxUploadSizeBytes is { } cached)
+        {
+            return cached;
+        }
+
+        var response = await http.GetFromJsonAsync<UploadLimitResponse>("api/wiki/upload-limit");
+        _maxUploadSizeBytes = response?.MaxFileSizeBytes ?? 200 * 1024 * 1024;
+        return _maxUploadSizeBytes.Value;
+    }
+
+    private record UploadLimitResponse(long MaxFileSizeBytes);
+
     public async Task<List<WikiArticle>> GetAllAsync() =>
         await http.GetFromJsonAsync<List<WikiArticle>>("api/wiki") ?? [];
 
@@ -47,10 +65,11 @@ public class ApiWikiArticleService(HttpClient http) : IWikiArticleService
 
     private async Task<List<WikiFile>> UploadFilesAsync(string requestUri, IReadOnlyList<IBrowserFile> files)
     {
+        var maxAllowedSize = await GetMaxUploadSizeBytesAsync();
         using var content = new MultipartFormDataContent();
         foreach (var file in files)
         {
-            var streamContent = new StreamContent(file.OpenReadStream(maxAllowedSize: 25 * 1024 * 1024));
+            var streamContent = new StreamContent(file.OpenReadStream(maxAllowedSize));
             streamContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
             content.Add(streamContent, "files", file.Name);
         }

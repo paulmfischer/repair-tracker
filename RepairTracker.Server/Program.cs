@@ -19,6 +19,20 @@ Log.Logger = new LoggerConfiguration()
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Wiki attachments can be sizable documents; raise Kestrel's default 30MB request body cap and
+// the form parser's default 128MB multipart cap to match the configurable Uploads:MaxFileSizeMb
+// (see UploadsPath.GetMaxFileSizeBytes and GET /api/wiki/upload-limit, which keeps the client-side
+// OpenReadStream cap in ApiWikiArticleService in sync).
+var maxUploadSizeBytes = RepairTracker.Server.UploadsPath.GetMaxFileSizeBytes(builder.Configuration);
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = maxUploadSizeBytes;
+});
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = maxUploadSizeBytes;
+});
+
 builder.Host.UseSerilog((context, services, loggerConfig) =>
 {
     loggerConfig.ReadFrom.Configuration(context.Configuration)
