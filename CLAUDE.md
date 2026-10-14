@@ -82,6 +82,8 @@ Writes made offline (create/update/delete an item, save settings) are applied op
 
 ### Configuration
 
+MongoDB runs with auth on (MongoDB 8.0). The app connects as a per-app `repairtracker` user (`readWrite` on `RepairTracker` only, `authSource=RepairTracker`); users are created by `mongo-init/01-create-app-user.js` on a fresh volume. Prod compose requires `MONGO_ROOT_PASSWORD` and `MONGO_APP_PASSWORD`.
+
 MongoDB connection string and database name come from `appsettings.json` (`ConnectionStrings:MongoDB` and `MongoDB:Database`). Override for local dev in `appsettings.Development.json`.
 
 ## Commit Guidelines

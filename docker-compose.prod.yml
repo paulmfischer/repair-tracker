@@ -6,7 +6,7 @@ services:
       - "8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__MongoDB=mongodb://mongo:27017
+      - ConnectionStrings__MongoDB=mongodb://repairtracker:${MONGO_APP_PASSWORD:?set MONGO_APP_PASSWORD}@mongo:27017/RepairTracker?authSource=RepairTracker
       - MongoDB__Database=RepairTracker
       - Uploads__Path=/data/uploads
       - DataProtection__Path=/data/keys
@@ -18,12 +18,18 @@ services:
       - mongo
 
   mongo:
-    image: mongo:7.0
+    image: mongo:8.0
     restart: unless-stopped
     volumes:
       - mongo_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro,Z
     environment:
       - MONGO_INITDB_DATABASE=RepairTracker
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:?set MONGO_ROOT_PASSWORD}
+      - APP_DB_NAME=RepairTracker
+      - APP_DB_USER=repairtracker
+      - APP_DB_PASSWORD=${MONGO_APP_PASSWORD:?set MONGO_APP_PASSWORD}
 
 volumes:
   mongo_data:
