@@ -1,14 +1,21 @@
 services:
   mongodb:
-    image: mongo:7.0
+    image: mongo:8.0
     container_name: repair-tracker-mongo
     restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro,Z
     environment:
       MONGO_INITDB_DATABASE: RepairTracker
+      # Auth is on. The init script only runs against an empty volume (see README).
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-root-dev-password}
+      APP_DB_NAME: RepairTracker
+      APP_DB_USER: repairtracker
+      APP_DB_PASSWORD: ${MONGO_APP_PASSWORD:-repairtracker-dev-password}
 
   seq:
     image: docker.io/datalust/seq:latest
